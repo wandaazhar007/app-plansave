@@ -1,0 +1,253 @@
+/* src/styles/_globals.scss
+   Global styles + resets + base layout helpers.
+   IMPORTANT: Use @use (no @import).
+*/
+
+@use "./variables" as v;
+@use "./responsive" as r;
+
+/* 1rem = 10px */
+html {
+  font-size: 62.5%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--ps-font-sans);
+  font-size: 1.6rem;
+  line-height: v.$line-normal;
+  color: var(--ps-text);
+  background: var(--ps-bg);
+}
+
+/* Box sizing reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Remove default margins */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+
+/* Links */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Media defaults */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* Form controls */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Accessibility: focus ring */
+:focus-visible {
+  outline: 0.3rem solid var(--ps-focus);
+  outline-offset: 0.2rem;
+  border-radius: 0.6rem;
+}
+
+/* Smooth scrolling (respect reduced motion) */
+html:focus-within {
+  scroll-behavior: smooth;
+}
+
+@include r.reduce-motion {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* App root */
+#root {
+  min-height: 100dvh;
+}
+
+/* Container helper */
+.container {
+  width: 100%;
+  max-width: v.$container-max;
+  margin-inline: auto;
+  padding-inline: v.$container-padding;
+}
+
+/* Simple page spacing */
+.page {
+  padding: v.$space-6 0;
+}
+
+.card {
+  background: var(--ps-surface);
+  border: 0.1rem solid var(--ps-border);
+  border-radius: v.$radius-lg;
+  box-shadow: var(--ps-shadow-sm);
+}
+
+/* Typography helpers */
+.text-muted {
+  color: var(--ps-muted);
+}
+
+.text-danger {
+  color: var(--ps-danger);
+}
+
+.text-success {
+  color: var(--ps-success);
+}
+
+/* Buttons baseline */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: v.$space-2;
+
+  padding: 1.2rem 1.6rem;
+  border-radius: v.$radius-md;
+
+  border: 0.1rem solid var(--ps-border);
+  background: var(--ps-surface);
+  box-shadow: var(--ps-shadow-sm);
+
+  transition: transform 120ms ease, box-shadow 120ms ease,
+    background-color 120ms ease, border-color 120ms ease;
+}
+
+.btn:hover {
+  transform: translateY(-0.1rem);
+  box-shadow: var(--ps-shadow-md);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-primary {
+  background: var(--ps-primary);
+  border-color: rgba(76, 125, 240, 0.35);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: rgba(76, 125, 240, 0.92);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.btn-ghost:hover {
+  background: rgba(31, 41, 55, 0.06);
+  text-decoration: none;
+}
+
+/* Inputs baseline */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-2;
+}
+
+.label {
+  font-size: v.$text-sm;
+  color: var(--ps-muted);
+}
+
+.input {
+  width: 100%;
+  padding: 1.2rem 1.2rem;
+  border-radius: v.$radius-md;
+  border: 0.1rem solid var(--ps-border);
+  background: var(--ps-surface);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgba(76, 125, 240, 0.5);
+  box-shadow: 0 0 0 0.4rem rgba(76, 125, 240, 0.18);
+}
+
+.help {
+  font-size: v.$text-sm;
+  color: var(--ps-muted);
+}
+
+.error {
+  font-size: v.$text-sm;
+  color: var(--ps-danger);
+}
+
+/* Mobile-first layout helpers
+   (kita akan pakai ini saat bikin layout /app + bottom nav / sidebar)
+*/
+.appShell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.appMain {
+  flex: 1;
+  padding-bottom: var(--ps-bottomnav-h);
+}
+
+@include r.up(md) {
+  .appMain {
+    padding-bottom: 0;
+  }
+}

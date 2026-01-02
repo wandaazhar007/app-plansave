@@ -1,0 +1,100 @@
+/* src/styles/_variables.scss
+   Design tokens (SCSS + CSS variables)
+   Note: html font-size akan diset 62.5% di _globals.scss (1rem = 10px)
+*/
+
+$font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial,
+  "Apple Color Emoji", "Segoe UI Emoji";
+$font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+  "Liberation Mono", "Courier New", monospace;
+
+/* Radii */
+$radius-xs: 0.6rem;
+$radius-sm: 0.8rem;
+$radius-md: 1.2rem;
+$radius-lg: 1.6rem;
+$radius-xl: 2rem;
+
+/* Shadows */
+$shadow-sm: 0 0.2rem 0.8rem rgba(17, 24, 39, 0.06);
+$shadow-md: 0 0.6rem 1.8rem rgba(17, 24, 39, 0.08);
+$shadow-lg: 0 1.2rem 3.2rem rgba(17, 24, 39, 0.12);
+
+/* Spacing scale */
+$space-1: 0.4rem;
+$space-2: 0.8rem;
+$space-3: 1.2rem;
+$space-4: 1.6rem;
+$space-5: 2rem;
+$space-6: 2.4rem;
+$space-7: 2.8rem;
+$space-8: 3.2rem;
+$space-10: 4rem;
+$space-12: 4.8rem;
+$space-14: 5.6rem;
+$space-16: 6.4rem;
+
+/* Typography */
+$text-xs: 1.2rem;
+$text-sm: 1.4rem;
+$text-md: 1.6rem;
+$text-lg: 1.8rem;
+$text-xl: 2rem;
+$text-2xl: 2.4rem;
+$text-3xl: 3rem;
+
+$line-tight: 1.2;
+$line-normal: 1.5;
+$line-relaxed: 1.65;
+
+/* Layout */
+$container-max: 112rem;
+/* 1120px equivalent, but in rem */
+$container-padding: 1.6rem;
+
+/* App Color System (CSS variables) */
+:root {
+  /* Brand palette (PlanSave) */
+  --ps-primary: #4c7df0;
+  --ps-secondary: #a7d8c9;
+  --ps-accent: #f2c48d;
+
+  --ps-bg: #fbfaf7;
+  --ps-surface: #ffffff;
+  --ps-border: #ece7df;
+
+  --ps-text: #1f2937;
+  --ps-muted: #6b7280;
+
+  /* Status */
+  --ps-success: #16a34a;
+  --ps-warning: #f59e0b;
+  --ps-danger: #ef4444;
+  --ps-info: #2563eb;
+
+  /* Focus ring */
+  --ps-focus: rgba(76, 125, 240, 0.35);
+
+  /* Nav sizes (mobile-first) */
+  --ps-navbar-h: 5.6rem;
+  --ps-bottomnav-h: 6.2rem;
+
+  /* Surfaces */
+  --ps-surface-soft: rgba(255, 255, 255, 0.75);
+  --ps-border-strong: rgba(31, 41, 55, 0.14);
+
+  /* Typography */
+  --ps-font-sans: #{$font-sans};
+  --ps-font-mono: #{$font-mono};
+
+  /* Radii */
+  --ps-radius-sm: #{$radius-sm};
+  --ps-radius-md: #{$radius-md};
+  --ps-radius-lg: #{$radius-lg};
+  --ps-radius-xl: #{$radius-xl};
+
+  /* Shadows */
+  --ps-shadow-sm: #{$shadow-sm};
+  --ps-shadow-md: #{$shadow-md};
+  --ps-shadow-lg: #{$shadow-lg};
+}

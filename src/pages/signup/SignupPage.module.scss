@@ -1,0 +1,266 @@
+/* src/pages/signup/SignupPage.module.scss */
+@use "../../styles/variables" as v;
+@use "../../styles/responsive" as r;
+
+.card {
+  width: 100%;
+  background: #ffffff;
+  border: 0.1rem solid #e2e8f0;
+  border-radius: 2rem;
+  box-shadow: 0 1.2rem 3.2rem rgba(15, 23, 42, 0.12);
+  padding: 3.2rem;
+
+  @include r.down(sm) {
+    padding: 2.4rem;
+    border-radius: 1.6rem;
+  }
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2.4rem;
+}
+
+.headerLogo {
+  width: 6.4rem;
+  height: 6.4rem;
+  object-fit: contain;
+  margin: 0 auto 1.2rem auto;
+}
+
+.title {
+  font-size: 2.4rem;
+  line-height: 1.25;
+  margin: 0;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.subtitle {
+  margin-top: 0.8rem;
+  color: #334155;
+  font-size: 1.4rem;
+  line-height: 1.6;
+}
+
+.googleBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+
+  padding: 1.2rem 1.4rem;
+  border-radius: 1.2rem;
+
+  background: #ffffff;
+  border: 0.1rem solid #e2e8f0;
+  box-shadow: 0 0.8rem 1.8rem rgba(15, 23, 42, 0.06);
+  font-weight: 600;
+  font-size: 1.4rem;
+
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.googleBtn:hover {
+  transform: translateY(-0.1rem);
+  box-shadow: 0 1.2rem 2.4rem rgba(15, 23, 42, 0.08);
+}
+
+.googleBtn:disabled {
+  opacity: 0.7;
+  transform: none;
+  box-shadow: none;
+}
+
+.googleIcon {
+  width: 1.8rem;
+  height: 1.8rem;
+  object-fit: contain;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  margin: 2rem 0;
+}
+
+.dividerLine {
+  height: 0.1rem;
+  background: #e2e8f0;
+  flex: 1;
+}
+
+.dividerText {
+  font-size: 1.2rem;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.label {
+  font-size: 1.3rem;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.inputWrap {
+  position: relative;
+}
+
+// .leftIcon {
+//   position: absolute;
+//   left: 1.2rem;
+//   top: 50%;
+//   transform: translateY(-50%);
+//   color: #94a3b8;
+//   font-size: 1.4rem;
+// }
+
+// .eyeBtn {
+//   position: absolute;
+//   right: 1rem;
+//   top: 50%;
+//   transform: translateY(-50%);
+//   width: 3.6rem;
+//   height: 3.6rem;
+//   border: none;
+//   background: transparent;
+//   color: #64748b;
+//   border-radius: 0.8rem;
+// }
+
+.leftIcon {
+  position: absolute;
+  left: 1.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 1.4rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.eyeBtn {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3.6rem;
+  height: 3.6rem;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  border-radius: 0.8rem;
+  z-index: 2;
+}
+
+/* naikkan spesifisitas supaya padding menang */
+.inputWrap :global(.input) {
+  padding-left: 4.8rem;
+  padding-right: 4.8rem;
+  border-radius: 1.2rem;
+}
+
+.eyeBtn:hover {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+// :global(.input) {
+//   padding-left: 4.2rem;
+//   padding-right: 4.2rem;
+//   border-radius: 1.2rem;
+// }
+
+.hint {
+  font-size: 1.2rem;
+  color: #64748b;
+  margin-top: -0.4rem;
+}
+
+.inputError {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 0.4rem rgba(239, 68, 68, 0.14) !important;
+}
+
+.errorText {
+  color: #ef4444;
+  font-size: 1.2rem;
+  line-height: 1.4;
+}
+
+.primaryBtn {
+  width: 100%;
+  margin-top: 0.2rem;
+
+  padding: 1.3rem 1.6rem;
+  border-radius: 1.2rem;
+  border: none;
+
+  background: #0097b2;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.4rem;
+
+  box-shadow: 0 1.2rem 2.6rem rgba(0, 151, 178, 0.25);
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.primaryBtn:hover {
+  background: #016274;
+  transform: translateY(-0.1rem);
+  box-shadow: 0 1.6rem 3.2rem rgba(0, 151, 178, 0.28);
+}
+
+.primaryBtn:disabled {
+  opacity: 0.75;
+  transform: none;
+  box-shadow: none;
+}
+
+.terms {
+  margin: 0.8rem 0 0 0;
+  text-align: center;
+  font-size: 1.2rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.inlineLink {
+  color: #0097b2;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.inlineLink:hover {
+  text-decoration: underline;
+}
+
+.bottomText {
+  margin: 1.2rem 0 0 0;
+  text-align: center;
+  font-size: 1.3rem;
+  color: #64748b;
+}
+
+.bottomLink {
+  color: #0097b2;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.bottomLink:hover {
+  text-decoration: underline;
+}

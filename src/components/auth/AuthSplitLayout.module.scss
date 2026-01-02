@@ -1,0 +1,98 @@
+/* src/components/auth/AuthSplitLayout.module.scss */
+@use "../../styles/variables" as v;
+@use "../../styles/responsive" as r;
+
+.wrap {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr;
+  background: #ffffff;
+
+  @include r.up(md) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Left (teal panel) */
+.left {
+  display: none;
+  background: linear-gradient(135deg, #0097b2 0%, #0bc0df 100%);
+  color: #ffffff;
+
+  @include r.up(md) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: v.$space-12;
+  }
+}
+
+.leftInner {
+  max-width: 46rem;
+  text-align: center;
+}
+
+.logoCircle {
+  width: 10rem;
+  height: 10rem;
+  border-radius: 999rem;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--ps-shadow-md);
+  display: grid;
+  place-items: center;
+  margin: 0 auto v.$space-6 auto;
+}
+
+.logoImg {
+  width: 6.2rem;
+  height: 6.2rem;
+  object-fit: contain;
+}
+
+.brand {
+  font-size: 3rem;
+  line-height: 1.2;
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.tagline {
+  margin-top: v.$space-3;
+  font-size: 1.6rem;
+  line-height: 1.6;
+  opacity: 0.92;
+}
+
+/* Right (form area) */
+.right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: v.$space-8 v.$space-4;
+  background: #ffffff;
+
+  @include r.up(md) {
+    padding: v.$space-12;
+  }
+}
+
+.rightInner {
+  width: 100%;
+  max-width: 48rem;
+}
+
+/* Centered variant (forgot) */
+.centeredWrap {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: v.$space-8 v.$space-4;
+  background: #f8fafc;
+}
+
+.centeredInner {
+  width: 100%;
+  max-width: 48rem;
+}

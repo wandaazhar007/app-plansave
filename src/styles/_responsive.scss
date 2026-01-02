@@ -1,0 +1,52 @@
+/* src/styles/_responsive.scss
+   Responsive helpers (mobile-first).
+   Breakpoints in rem (with html 62.5%, 1rem ≈ 10px)
+*/
+
+@use "sass:map";
+
+$breakpoints: (
+  sm: 48rem,
+  // ~480px
+  md: 76.8rem,
+  // ~768px
+  lg: 102.4rem,
+  // ~1024px
+  xl: 128rem // ~1280px
+);
+
+@function bp($name) {
+  @if map.has-key($breakpoints, $name) {
+    @return map.get($breakpoints, $name);
+  }
+
+  @error "Breakpoint `#{$name}` tidak ditemukan. Pilihan: #{map.keys($breakpoints)}";
+}
+
+/* >= breakpoint */
+@mixin up($name) {
+  @media (min-width: bp($name)) {
+    @content;
+  }
+}
+
+/* <= breakpoint */
+@mixin down($name) {
+  @media (max-width: bp($name)) {
+    @content;
+  }
+}
+
+/* between two breakpoints */
+@mixin between($from, $to) {
+  @media (min-width: bp($from)) and (max-width: bp($to)) {
+    @content;
+  }
+}
+
+/* prefers-reduced-motion helper */
+@mixin reduce-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
