@@ -1,0 +1,127 @@
+/* src/components/sidebar/Sidebar.module.scss */
+@use "../../styles/variables" as v;
+@use "../../styles/responsive" as r;
+
+$sidebar-w: 26rem;
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+  z-index: 40;
+
+  @include r.up(md) {
+    display: none;
+  }
+}
+
+.overlayOpen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sidebar {
+  width: $sidebar-w;
+  background: var(--ps-surface);
+  border-right: 0.1rem solid var(--ps-border);
+  padding: v.$space-4;
+  height: calc(100dvh - var(--ps-navbar-h));
+
+  /* desktop: always visible */
+  display: none;
+
+  @include r.up(md) {
+    display: block;
+    position: sticky;
+    top: var(--ps-navbar-h);
+  }
+
+  /* mobile drawer */
+  position: fixed;
+  top: var(--ps-navbar-h);
+  left: 0;
+  transform: translateX(-105%);
+  transition: transform 180ms ease;
+  z-index: 45;
+  display: block;
+
+  @include r.up(md) {
+    transform: none;
+    position: sticky;
+  }
+}
+
+.sidebarOpen {
+  transform: translateX(0);
+}
+
+.mobileTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: v.$space-4;
+
+  @include r.up(md) {
+    display: none;
+  }
+}
+
+.menuLabel {
+  font-size: v.$text-sm;
+  color: var(--ps-muted);
+  letter-spacing: 0.08em;
+  font-weight: 800;
+}
+
+.closeBtn {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 1.2rem;
+  border: none;
+  background: rgba(31, 41, 55, 0.06);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-2;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: v.$space-3;
+  padding: 1.1rem 1.2rem;
+  border-radius: v.$radius-md;
+  color: var(--ps-text);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.link:hover {
+  background: rgba(31, 41, 55, 0.06);
+  text-decoration: none;
+}
+
+.icon {
+  width: 2.8rem;
+  display: grid;
+  place-items: center;
+  color: var(--ps-muted);
+}
+
+.text {
+  font-size: 1.5rem;
+}
+
+.active {
+  background: rgba(167, 216, 201, 0.35);
+  color: #0f172a;
+}
+
+.active .icon {
+  color: #0ea5b7;
+}

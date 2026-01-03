@@ -1,0 +1,22 @@
+/* src/pages/app/AppLayout.module.scss */
+@use "../../styles/variables" as v;
+@use "../../styles/responsive" as r;
+
+.shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  min-height: calc(100dvh - var(--ps-navbar-h));
+}
+
+.main {
+  flex: 1;
+  background: var(--ps-bg);
+  min-width: 0;
+  /* important for overflow content */
+}

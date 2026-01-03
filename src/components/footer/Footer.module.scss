@@ -1,0 +1,46 @@
+/* src/components/footer/Footer.module.scss */
+@use "../../styles/variables" as v;
+@use "../../styles/responsive" as r;
+
+.footer {
+  background: var(--ps-surface);
+  border-top: 0.1rem solid var(--ps-border);
+  padding: v.$space-4 0;
+}
+
+.inner {
+  width: 100%;
+  max-width: v.$container-max;
+  margin-inline: auto;
+  padding-inline: v.$container-padding;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$space-3;
+
+  color: var(--ps-muted);
+  font-size: v.$text-sm;
+
+  @include r.down(sm) {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+}
+
+.left,
+.right {
+  line-height: 1.6;
+}
+
+.link {
+  color: var(--ps-primary);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}

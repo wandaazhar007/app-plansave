@@ -1,0 +1,144 @@
+/* src/components/navbar/Navbar.module.scss */
+@use "../../styles/variables" as v;
+@use "../../styles/responsive" as r;
+
+.navbar {
+  height: var(--ps-navbar-h);
+  background: var(--ps-surface);
+  border-bottom: 0.1rem solid var(--ps-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 v.$space-4;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: v.$space-3;
+  min-width: 0;
+}
+
+.hamburger {
+  width: 4.2rem;
+  height: 4.2rem;
+  border-radius: 1.2rem;
+  border: 0.1rem solid transparent;
+  background: transparent;
+  color: var(--ps-text);
+}
+
+.hamburger:hover {
+  background: rgba(31, 41, 55, 0.06);
+}
+
+@include r.up(md) {
+  .hamburger {
+    display: none;
+  }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: v.$space-2;
+  cursor: pointer;
+  user-select: none;
+}
+
+.logo {
+  width: 3.4rem;
+  height: 3.4rem;
+  object-fit: contain;
+}
+
+.title {
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  font-size: 1.6rem;
+}
+
+.right {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: v.$space-2;
+}
+
+.iconBtn {
+  width: 4.2rem;
+  height: 4.2rem;
+  border-radius: 1.2rem;
+  border: 0.1rem solid transparent;
+  background: transparent;
+  color: var(--ps-text);
+}
+
+.iconBtn:hover {
+  background: rgba(31, 41, 55, 0.06);
+}
+
+.profileBtn {
+  width: 4.2rem;
+  height: 4.2rem;
+  border-radius: 999rem;
+  border: 0.1rem solid var(--ps-border);
+  background: rgba(167, 216, 201, 0.35);
+  color: #0ea5b7;
+}
+
+.profileBtn:hover {
+  background: rgba(167, 216, 201, 0.5);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(var(--ps-navbar-h) - 0.4rem);
+  right: 0;
+  width: 24rem;
+  background: var(--ps-surface);
+  border: 0.1rem solid var(--ps-border);
+  border-radius: v.$radius-lg;
+  box-shadow: var(--ps-shadow-lg);
+  padding: v.$space-2;
+  z-index: 50;
+}
+
+.menuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: v.$space-3;
+  padding: 1.1rem 1.2rem;
+  border-radius: v.$radius-md;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-weight: 700;
+  color: var(--ps-text);
+}
+
+.menuItem:hover {
+  background: rgba(31, 41, 55, 0.06);
+}
+
+.menuIcon {
+  width: 2.4rem;
+  display: grid;
+  place-items: center;
+  color: var(--ps-muted);
+}
+
+.divider {
+  height: 0.1rem;
+  background: rgba(31, 41, 55, 0.12);
+  margin: v.$space-2 0;
+}
+
+.logout {
+  color: var(--ps-danger);
+}
+
+.logout .menuIcon {
+  color: var(--ps-danger);
+}
