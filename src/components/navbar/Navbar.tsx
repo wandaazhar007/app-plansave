@@ -1,5 +1,5 @@
 // src/components/navbar/Navbar.tsx
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -18,10 +18,25 @@ type Props = {
 
 export default function Navbar({ onToggleSidebar }: Props) {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+
+  // ASSUMPTION: useAuth() provides firebase user object
+  const { logout, user } = useAuth() as {
+    logout: () => Promise<void>;
+    user?: { displayName?: string | null; email?: string | null } | null;
+  };
 
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+
+  const userLabel = useMemo(() => {
+    const name = (user?.displayName ?? "").trim();
+    if (name) return name;
+
+    const email = (user?.email ?? "").trim();
+    if (email && email.includes("@")) return email.split("@")[0];
+
+    return "Account";
+  }, [user?.displayName, user?.email]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -52,7 +67,16 @@ export default function Navbar({ onToggleSidebar }: Props) {
             <FontAwesomeIcon icon={faBars} />
           </button>
 
-          <div className={styles.brand} onClick={() => navigate("/app/dashboard")}>
+          <div
+            className={styles.brand}
+            onClick={() => navigate("/app/dashboard")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") navigate("/app/dashboard");
+            }}
+            aria-label="Go to dashboard"
+          >
             <img
               className={styles.logo}
               src="/navbar-logo-plansave.png"
@@ -63,22 +87,18 @@ export default function Navbar({ onToggleSidebar }: Props) {
         </div>
 
         <div className={styles.right} ref={menuRef}>
-          <button
-            type="button"
-            className={styles.iconBtn}
-            aria-label="Settings"
-            onClick={() => navigate("/app/settings")}
-          >
-            <FontAwesomeIcon icon={faGear} />
-          </button>
 
           <button
             type="button"
             className={styles.profileBtn}
-            aria-label="Profile menu"
+            aria-label="Account menu"
             onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
           >
-            <FontAwesomeIcon icon={faUser} />
+            <span className={styles.profileAvatar} aria-hidden="true">
+              <FontAwesomeIcon icon={faUser} />
+            </span>
+            <span className={styles.profileName}>{userLabel}</span>
           </button>
 
           {open ? (
@@ -94,7 +114,7 @@ export default function Navbar({ onToggleSidebar }: Props) {
                 <span className={styles.menuIcon} aria-hidden="true">
                   <FontAwesomeIcon icon={faUser} />
                 </span>
-                <span>Profile</span>
+                <span>{userLabel}</span>
               </button>
 
               <button

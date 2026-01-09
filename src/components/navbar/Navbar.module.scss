@@ -10,7 +10,6 @@
   align-items: center;
 }
 
-/* ✅ align dengan container + max width */
 .inner {
   width: 100%;
   height: 100%;
@@ -102,17 +101,66 @@
   background: rgba(31, 41, 55, 0.06);
 }
 
+/* ✅ profile button becomes pill with name */
 .profileBtn {
-  width: 4.2rem;
   height: 4.2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: v.$space-2;
+
+  padding: 0 v.$space-3;
   border-radius: 999rem;
+
   border: 0.1rem solid var(--ps-border);
-  background: rgba(167, 216, 201, 0.35);
-  color: #0ea5b7;
+  background: rgba(167, 216, 201, 0.22);
+  color: var(--ps-text);
+
+  transition: background-color 120ms ease, box-shadow 120ms ease,
+    border-color 120ms ease;
 }
 
 .profileBtn:hover {
-  background: rgba(167, 216, 201, 0.5);
+  background: rgba(167, 216, 201, 0.34);
+}
+
+.profileBtn:focus-visible {
+  outline: 0.3rem solid var(--ps-focus);
+  outline-offset: 0.2rem;
+}
+
+.profileAvatar {
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 999rem;
+  display: grid;
+  place-items: center;
+
+  background: rgba(167, 216, 201, 0.35);
+  border: 0.1rem solid rgba(236, 231, 223, 0.9);
+  color: #0ea5b7;
+}
+
+.profileName {
+  font-weight: 800;
+  font-size: v.$text-sm;
+  line-height: 1;
+  color: var(--ps-text);
+
+  max-width: 16rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* mobile: keep clean, show avatar only */
+@include r.down(sm) {
+  .profileBtn {
+    padding: 0 0.6rem;
+  }
+
+  .profileName {
+    display: none;
+  }
 }
 
 .dropdown {
