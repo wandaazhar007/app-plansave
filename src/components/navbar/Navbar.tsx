@@ -41,89 +41,91 @@ export default function Navbar({ onToggleSidebar }: Props) {
 
   return (
     <header className={styles.navbar}>
-      <div className={styles.left}>
-        <button
-          type="button"
-          className={styles.hamburger}
-          onClick={onToggleSidebar}
-          aria-label="Open menu"
-        >
-          <FontAwesomeIcon icon={faBars} />
-        </button>
+      <div className={styles.inner}>
+        <div className={styles.left}>
+          <button
+            type="button"
+            className={styles.hamburger}
+            onClick={onToggleSidebar}
+            aria-label="Open menu"
+          >
+            <FontAwesomeIcon icon={faBars} />
+          </button>
 
-        <div className={styles.brand} onClick={() => navigate("/app/dashboard")}>
-          <img
-            className={styles.logo}
-            src="/navbar-logo-plansave.png"
-            alt="Plansave"
-          />
-          <span className={styles.title}>PLANSAVE</span>
-        </div>
-      </div>
-
-      <div className={styles.right} ref={menuRef}>
-        <button
-          type="button"
-          className={styles.iconBtn}
-          aria-label="Settings"
-          onClick={() => navigate("/app/settings")}
-        >
-          <FontAwesomeIcon icon={faGear} />
-        </button>
-
-        <button
-          type="button"
-          className={styles.profileBtn}
-          aria-label="Profile menu"
-          onClick={() => setOpen((v) => !v)}
-        >
-          <FontAwesomeIcon icon={faUser} />
-        </button>
-
-        {open ? (
-          <div className={styles.dropdown} role="menu" aria-label="Profile menu">
-            <button
-              type="button"
-              className={styles.menuItem}
-              onClick={() => {
-                setOpen(false);
-                navigate("/app/profile");
-              }}
-            >
-              <span className={styles.menuIcon} aria-hidden="true">
-                <FontAwesomeIcon icon={faUser} />
-              </span>
-              <span>Profile</span>
-            </button>
-
-            <button
-              type="button"
-              className={styles.menuItem}
-              onClick={() => {
-                setOpen(false);
-                navigate("/app/settings");
-              }}
-            >
-              <span className={styles.menuIcon} aria-hidden="true">
-                <FontAwesomeIcon icon={faGear} />
-              </span>
-              <span>Settings</span>
-            </button>
-
-            <div className={styles.divider} />
-
-            <button
-              type="button"
-              className={`${styles.menuItem} ${styles.logout}`}
-              onClick={onLogout}
-            >
-              <span className={styles.menuIcon} aria-hidden="true">
-                <FontAwesomeIcon icon={faRightFromBracket} />
-              </span>
-              <span>Logout</span>
-            </button>
+          <div className={styles.brand} onClick={() => navigate("/app/dashboard")}>
+            <img
+              className={styles.logo}
+              src="/navbar-logo-plansave.png"
+              alt="Plansave"
+            />
+            <span className={styles.title}>PLANSAVE</span>
           </div>
-        ) : null}
+        </div>
+
+        <div className={styles.right} ref={menuRef}>
+          <button
+            type="button"
+            className={styles.iconBtn}
+            aria-label="Settings"
+            onClick={() => navigate("/app/settings")}
+          >
+            <FontAwesomeIcon icon={faGear} />
+          </button>
+
+          <button
+            type="button"
+            className={styles.profileBtn}
+            aria-label="Profile menu"
+            onClick={() => setOpen((v) => !v)}
+          >
+            <FontAwesomeIcon icon={faUser} />
+          </button>
+
+          {open ? (
+            <div className={styles.dropdown} role="menu" aria-label="Profile menu">
+              <button
+                type="button"
+                className={styles.menuItem}
+                onClick={() => {
+                  setOpen(false);
+                  navigate("/app/profile");
+                }}
+              >
+                <span className={styles.menuIcon} aria-hidden="true">
+                  <FontAwesomeIcon icon={faUser} />
+                </span>
+                <span>Profile</span>
+              </button>
+
+              <button
+                type="button"
+                className={styles.menuItem}
+                onClick={() => {
+                  setOpen(false);
+                  navigate("/app/settings");
+                }}
+              >
+                <span className={styles.menuIcon} aria-hidden="true">
+                  <FontAwesomeIcon icon={faGear} />
+                </span>
+                <span>Settings</span>
+              </button>
+
+              <div className={styles.divider} />
+
+              <button
+                type="button"
+                className={`${styles.menuItem} ${styles.logout}`}
+                onClick={onLogout}
+              >
+                <span className={styles.menuIcon} aria-hidden="true">
+                  <FontAwesomeIcon icon={faRightFromBracket} />
+                </span>
+                <span>Logout</span>
+              </button>
+            </div>
+          ) : null}
+        </div>
       </div>
     </header>
   );

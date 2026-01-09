@@ -8,8 +8,32 @@
   border-bottom: 0.1rem solid var(--ps-border);
   display: flex;
   align-items: center;
+}
+
+/* ✅ align dengan container + max width */
+.inner {
+  width: 100%;
+  height: 100%;
+  max-width: v.$container-max;
+  margin-inline: auto;
+
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 0 v.$space-4;
+
+  padding-inline: v.$container-padding;
+
+  @include r.up(md) {
+    padding-inline: 2.4rem;
+  }
+
+  @include r.up(lg) {
+    padding-inline: 3.2rem;
+  }
+
+  @include r.up(xl) {
+    padding-inline: 4rem;
+  }
 }
 
 .left {

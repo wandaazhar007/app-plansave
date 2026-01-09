@@ -31,38 +31,41 @@ export default function Sidebar({ isOpen = false, onClose }: Props) {
   return (
     <>
       {/* overlay (mobile) */}
-      <div
-        className={`${styles.overlay} ${isOpen ? styles.overlayOpen : ""}`}
-        onClick={onClose}
-        aria-hidden={!isOpen}
-      />
+      <div className="inner">
 
-      <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ""}`}>
-        <div className={styles.mobileTop}>
-          <div className={styles.menuLabel}>MENU</div>
-          <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Close menu">
-            <FontAwesomeIcon icon={faXmark} />
-          </button>
-        </div>
+        <div
+          className={`${styles.overlay} ${isOpen ? styles.overlayOpen : ""}`}
+          onClick={onClose}
+          aria-hidden={!isOpen}
+        />
 
-        <nav className={styles.nav}>
-          {links.map((l) => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              className={({ isActive }) =>
-                `${styles.link} ${isActive ? styles.active : ""}`
-              }
-              end
-            >
-              <span className={styles.icon} aria-hidden="true">
-                <FontAwesomeIcon icon={l.icon} />
-              </span>
-              <span className={styles.text}>{l.label}</span>
-            </NavLink>
-          ))}
-        </nav>
-      </aside>
+        <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ""}`}>
+          <div className={styles.mobileTop}>
+            <div className={styles.menuLabel}>MENU</div>
+            <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Close menu">
+              <FontAwesomeIcon icon={faXmark} />
+            </button>
+          </div>
+
+          <nav className={styles.nav}>
+            {links.map((l) => (
+              <NavLink
+                key={l.to}
+                to={l.to}
+                className={({ isActive }) =>
+                  `${styles.link} ${isActive ? styles.active : ""}`
+                }
+                end
+              >
+                <span className={styles.icon} aria-hidden="true">
+                  <FontAwesomeIcon icon={l.icon} />
+                </span>
+                <span className={styles.text}>{l.label}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </aside>
+      </div>
     </>
   );
 }

@@ -48,9 +48,10 @@ $line-normal: 1.5;
 $line-relaxed: 1.65;
 
 /* Layout */
-$container-max: 112rem;
-/* 1120px equivalent, but in rem */
-$container-padding: 1.6rem;
+$container-max: 120rem;
+
+/* ✅ ini harus kecil & konsisten untuk mobile */
+$container-padding: 2rem;
 
 /* App Color System (CSS variables) */
 :root {

@@ -25,7 +25,7 @@ export default function AppLayout() {
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         <main className={styles.main}>
-          <div className="container page">
+          <div className={styles.content}>
             <Outlet />
           </div>
 

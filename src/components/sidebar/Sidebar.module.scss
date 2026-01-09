@@ -23,34 +23,60 @@ $sidebar-w: 26rem;
   pointer-events: auto;
 }
 
+.inner {
+  width: 100%;
+  height: 100%;
+  max-width: v.$container-max;
+  margin-inline: auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding-inline: v.$container-padding;
+
+  @include r.up(md) {
+    padding-inline: 2.4rem;
+  }
+
+  @include r.up(lg) {
+    padding-inline: 3.2rem;
+  }
+
+  @include r.up(xl) {
+    padding-inline: 4rem;
+  }
+}
+
 .sidebar {
   width: $sidebar-w;
   background: var(--ps-surface);
-  border-right: 0.1rem solid var(--ps-border);
-  padding: v.$space-4;
-  height: calc(100dvh - var(--ps-navbar-h));
 
-  /* desktop: always visible */
-  display: none;
+  /* ✅ panel style (lebih clean) */
+  border: 0.1rem solid var(--ps-border);
+  border-radius: v.$radius-lg;
+  box-shadow: var(--ps-shadow-sm);
 
-  @include r.up(md) {
-    display: block;
-    position: sticky;
-    top: var(--ps-navbar-h);
-  }
+  padding: v.$space-6;
 
   /* mobile drawer */
   position: fixed;
   top: var(--ps-navbar-h);
   left: 0;
+  height: calc(100dvh - var(--ps-navbar-h));
   transform: translateX(-105%);
   transition: transform 180ms ease;
   z-index: 45;
   display: block;
 
+  /* desktop */
   @include r.up(md) {
-    transform: none;
     position: sticky;
+    top: 0;
+
+    /* ✅ karena body padding 1.6rem atas+ bawah => 3.2rem */
+    height: calc(100dvh - var(--ps-navbar-h) - 3.2rem);
+    transform: none;
   }
 }
 

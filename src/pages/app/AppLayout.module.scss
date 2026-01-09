@@ -8,15 +8,50 @@
   flex-direction: column;
 }
 
+/*
+  ✅ KUNCI ALIGNMENT:
+  Body (sidebar + main) harus pakai max-width + padding-inline yang SAMA
+  dengan Navbar .inner supaya garis kiri/kanan sejajar.
+*/
 .body {
   flex: 1;
   display: flex;
-  min-height: calc(100dvh - var(--ps-navbar-h));
+  width: 100%;
+
+  max-width: v.$container-max;
+  margin-inline: auto;
+
+  /* same gutter system as Navbar */
+  padding-inline: v.$container-padding;
+
+  /* vertical breathing room (desktop) */
+  padding-block: v.$space-4;
+  gap: v.$space-4;
+
+  @include r.up(md) {
+    padding-inline: 2.4rem;
+  }
+
+  @include r.up(lg) {
+    padding-inline: 3.2rem;
+  }
+
+  @include r.up(xl) {
+    padding-inline: 4rem;
+  }
 }
 
 .main {
   flex: 1;
-  background: var(--ps-bg);
   min-width: 0;
-  /* important for overflow content */
+  display: flex;
+  flex-direction: column;
+  background: var(--ps-bg);
+}
+
+/* menggantikan .container.page yang sebelumnya membingungkan alignment */
+.content {
+  flex: 1;
+  padding: v.$space-6 0;
+  /* setara dengan .page */
 }

@@ -115,11 +115,33 @@ html:focus-within {
 }
 
 /* Container helper */
+// .container {
+//   width: 100%;
+//   max-width: v.$container-max;
+//   margin-inline: auto;
+//   padding-inline: v.$container-padding;
+// }
+
 .container {
   width: 100%;
   max-width: v.$container-max;
   margin-inline: auto;
+
+  /* mobile-first: kasih napas kanan-kiri */
   padding-inline: v.$container-padding;
+
+  /* desktop: tambah sedikit biar nggak mepet */
+  @include r.up(md) {
+    padding-inline: 2.4rem;
+  }
+
+  @include r.up(lg) {
+    padding-inline: 3.2rem;
+  }
+
+  @include r.up(xl) {
+    padding-inline: 4rem;
+  }
 }
 
 /* Simple page spacing */
