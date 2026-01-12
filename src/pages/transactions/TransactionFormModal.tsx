@@ -3,8 +3,8 @@ import { useMemo, useState } from "react";
 import Modal from "../../components/modal/Modal";
 import type { Currency, Transaction, TransactionType } from "../../types/transaction";
 import styles from "./TransactionsPage.module.scss";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+// import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 
 type Mode = "create" | "edit";
 
