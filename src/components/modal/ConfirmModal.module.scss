@@ -1,0 +1,24 @@
+/* src/components/modal/ConfirmModal.module.scss */
+@use "../../styles/variables" as v;
+
+.desc {
+  color: var(--ps-muted);
+  line-height: v.$line-relaxed;
+  margin-bottom: v.$space-5;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: v.$space-3;
+}
+
+.dangerBtn {
+  background: var(--ps-danger);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fff;
+}
+
+.dangerBtn:hover {
+  background: rgba(239, 68, 68, 0.92);
+}

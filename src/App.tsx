@@ -1,7 +1,6 @@
 // src/App.tsx
 import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { Toaster } from "react-hot-toast";
 
 import LoginPage from "./pages/login/LoginPage";
 import SignupPage from "./pages/signup/SignupPage";
@@ -10,6 +9,9 @@ import ForgotPasswordPage from "./pages/forgot/ForgotPasswordPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AppLayout from "./pages/app/AppLayout";
 import DashboardPage from "./pages/dashboard/DashboardPage";
+import TransactionsPage from "./pages/transactions/TransactionsPage";
+
+import { ToastProvider } from "./components/toast/ToastProvider";
 
 const APP_NAME = "PlanSave — Supportive budgeting for everyday life";
 const APP_DESCRIPTION =
@@ -73,9 +75,7 @@ export default function App() {
   }, []);
 
   return (
-    <>
-      <Toaster position="top-right" toastOptions={{ duration: 3500 }} />
-
+    <ToastProvider>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
 
@@ -96,7 +96,9 @@ export default function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
 
-          <Route path="transactions" element={<Placeholder title="Transactions" />} />
+          {/* ✅ Transactions module */}
+          <Route path="transactions" element={<TransactionsPage />} />
+
           <Route path="budgets" element={<Placeholder title="Budgets" />} />
           <Route path="recurring" element={<Placeholder title="Recurring" />} />
           <Route path="analytics" element={<Placeholder title="Analytics" />} />
@@ -107,6 +109,6 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
-    </>
+    </ToastProvider>
   );
 }

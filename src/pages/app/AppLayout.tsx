@@ -5,6 +5,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "../../components/navbar/Navbar";
 import Sidebar from "../../components/sidebar/Sidebar";
 import Footer from "../../components/footer/Footer";
+import { ToastProvider } from "../../components/toast/ToastProvider";
 
 import styles from "./AppLayout.module.scss";
 
@@ -18,20 +19,22 @@ export default function AppLayout() {
   }, [location.pathname]);
 
   return (
-    <div className={styles.shell}>
-      <Navbar onToggleSidebar={() => setSidebarOpen((v) => !v)} />
+    <ToastProvider>
+      <div className={styles.shell}>
+        <Navbar onToggleSidebar={() => setSidebarOpen((v) => !v)} />
 
-      <div className={styles.body}>
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <div className={styles.body}>
+          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-        <main className={styles.main}>
-          <div className={styles.content}>
-            <Outlet />
-          </div>
+          <main className={styles.main}>
+            <div className={styles.content}>
+              <Outlet />
+            </div>
 
-          <Footer />
-        </main>
+            <Footer />
+          </main>
+        </div>
       </div>
-    </div>
+    </ToastProvider>
   );
 }

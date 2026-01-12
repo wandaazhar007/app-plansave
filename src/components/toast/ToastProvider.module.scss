@@ -1,0 +1,77 @@
+/* src/components/toast/ToastProvider.module.scss */
+@use "../../styles/variables" as v;
+@use "../../styles/responsive" as r;
+
+.stack {
+  position: fixed;
+  right: v.$space-4;
+  bottom: v.$space-4;
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-2;
+  z-index: 90;
+
+  @include r.down(sm) {
+    left: v.$space-4;
+    right: v.$space-4;
+  }
+}
+
+.toast {
+  display: grid;
+  grid-template-columns: 2.2rem 1fr 2.6rem;
+  align-items: start;
+  gap: v.$space-3;
+
+  padding: v.$space-4;
+  border-radius: v.$radius-lg;
+  background: var(--ps-surface);
+  border: 0.1rem solid var(--ps-border);
+  box-shadow: var(--ps-shadow-lg);
+}
+
+.icon {
+  font-size: 1.8rem;
+  margin-top: 0.1rem;
+}
+
+.content {
+  min-width: 0;
+}
+
+.title {
+  font-weight: 900;
+  margin-bottom: 0.2rem;
+}
+
+.message {
+  color: var(--ps-muted);
+  font-size: v.$text-sm;
+  line-height: v.$line-relaxed;
+}
+
+.close {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.8rem;
+  border: none;
+  background: transparent;
+  color: var(--ps-muted);
+}
+
+.close:hover {
+  background: rgba(31, 41, 55, 0.06);
+  color: var(--ps-text);
+}
+
+.success .icon {
+  color: var(--ps-success);
+}
+
+.error .icon {
+  color: var(--ps-danger);
+}
+
+.info .icon {
+  color: var(--ps-info);
+}
