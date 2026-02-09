@@ -1,434 +1,527 @@
-// src/pages/transactions/TransactionsPage.tsx
-import { useEffect, useMemo, useRef, useState } from "react";
-import styles from "./TransactionsPage.module.scss";
 
+import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
-  faPen,
   faTrash,
-  faArrowRotateRight,
-  faMagnifyingGlass,
+  faPenToSquare,
   faFilter,
-  faCircleInfo,
+  faRotateRight,
+  faChevronDown,
 } from "@fortawesome/free-solid-svg-icons";
 
-import type { Transaction } from "../../types/transaction";
-import { ApiError } from "../../types/api";
-import { createTransaction, deleteTransaction, listTransactions, updateTransaction } from "../../services/transactionsService";
-import TableSkeleton from "../../components/skeleton/TableSkeleton";
-import ConfirmModal from "../../components/modal/ConfirmModal";
-import TransactionFormModal from "./TransactionFormModal";
-import { useToast } from "../../components/toast/ToastProvider";
+import useMediaQuery from "../../lib/hooks/useMediaQuery";
+import { useAuth } from "../../lib/auth/useAuth";
 
-function formatMoney(amountCents: number, currency: "USD" | "IDR") {
-  const value = amountCents / 100;
+// import type { Transaction } from "./types";
+import type { Transaction } from "../../types/transaction";
+// import {
+//   createTransaction,
+//   deleteTransaction,
+//   listTransactions,
+//   updateTransaction,
+// } from "./services/transactionsService";
+
+import { listTransactions, createTransaction, updateTransaction, deleteTransaction } from "../../services/transactionsService";
+
+// import FormTransaction from "./components/FormTransaction";
+import FormTransaction from "../../components/formTransaction/FormTransaction";
+// import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
+import ConfirmDeleteModal from "../../components/confirmDeleteModal/ConfirmDeleteModal";
+
+import styles from "./TransactionsPage.module.scss";
+
+type Filters = {
+  q: string; // live search (client-side)
+  from: string;
+  to: string;
+  type: "" | "income" | "expense";
+  category: string;
+  dialysis: "" | "true" | "false";
+};
+
+function formatMoney(amount: number, currency: "USD" | "IDR") {
   try {
     return new Intl.NumberFormat(currency === "IDR" ? "id-ID" : "en-US", {
       style: "currency",
       currency,
-      minimumFractionDigits: currency === "IDR" ? 0 : 2,
       maximumFractionDigits: currency === "IDR" ? 0 : 2,
-    }).format(value);
+    }).format(amount);
   } catch {
-    return currency === "IDR" ? `Rp ${value}` : `$${value.toFixed(2)}`;
+    return currency === "IDR" ? `Rp ${amount}` : `$${amount}`;
   }
 }
 
-function debounce<T extends (...args: any[]) => void>(fn: T, ms: number) {
-  let t: any;
-  return (...args: Parameters<T>) => {
-    clearTimeout(t);
-    t = setTimeout(() => fn(...args), ms);
-  };
-}
-
 export default function TransactionsPage() {
-  const toast = useToast();
+  const isDesktop = useMediaQuery("(min-width: 76.8rem)"); // md breakpoint
+  // const { getIdToken } = useAuth() as any;
+  const { getAccessToken } = useAuth();
+  // UI state
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [mode, setMode] = useState<"idle" | "create" | "edit">("idle");
+  const [editing, setEditing] = useState<Transaction | null>(null);
 
-  // filters (API)
-  const [from, setFrom] = useState<string>("");
-  const [to, setTo] = useState<string>("");
-  const [type, setType] = useState<"" | "income" | "expense">("");
-  const [category, setCategory] = useState<string>("");
-  const [dialysis, setDialysis] = useState<"" | "true" | "false">("");
-
-  // live search (client-side, no button)
-  const [search, setSearch] = useState("");
-
+  // data state
   const [items, setItems] = useState<Transaction[]>([]);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null | undefined>(null);
+  const [searching, setSearching] = useState(false);
+  const [filters, setFilters] = useState<Filters>({
+    q: "",
+    from: "",
+    to: "",
+    type: "",
+    category: "",
+    dialysis: "",
+  });
 
-  const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [debouncedQ, setDebouncedQ] = useState(filters.q);
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editTx, setEditTx] = useState<Transaction | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
-  const [deleteTx, setDeleteTx] = useState<Transaction | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [pageLimit] = useState(20);
 
-  const abortRef = useRef<AbortController | null>(null);
+  // live search debounce
+  // useEffect(() => {
+  //   const t = setTimeout(() => setDebouncedQ(filters.q), 250);
+  //   return () => clearTimeout(t);
+  // }, [filters.q]);
+  useEffect(() => {
+    setSearching(true);
 
-  const filteredItems = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const t = setTimeout(() => {
+      setDebouncedQ(filters.q);
+      // kasih “agak lama” biar skeleton keliatan smooth
+      setTimeout(() => setSearching(false), 450);
+    }, 250);
+
+    return () => clearTimeout(t);
+  }, [filters.q]);
+
+  // category suggestions
+  const categorySuggestions = useMemo(() => {
+    const s = new Set<string>();
+    items.forEach((tx) => {
+      if (tx.category) s.add(tx.category);
+    });
+    return Array.from(s).sort((a, b) => a.localeCompare(b)).slice(0, 30);
+  }, [items]);
+
+  // client-side live search over loaded items
+  const visibleItems = useMemo(() => {
+    const q = debouncedQ.trim().toLowerCase();
     if (!q) return items;
-    return items.filter((t) => {
-      const hay = `${t.category ?? ""} ${t.note ?? ""} ${t.type ?? ""}`.toLowerCase();
+
+    return items.filter((tx) => {
+      const hay = `${tx.category ?? ""} ${tx.note ?? ""} ${tx.type ?? ""}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [items, search]);
+  }, [items, debouncedQ]);
 
-  async function fetchPage(opts: { reset: boolean; cursor?: string | null }) {
-    abortRef.current?.abort();
-    const ac = new AbortController();
-    abortRef.current = ac;
-
+  async function fetchFirst() {
     setLoading(true);
-    setErrorMsg(null);
-
-    // skeleton dibuat "lebih lama"
-    const MIN_SKELETON_MS = opts.reset ? 900 : 650;
+    setError(null);
 
     try {
+      // const token = await getIdToken?.();
+      const token = await getAccessToken();
+      if (!token) throw new Error("Missing auth token.");
+
       const res = await listTransactions({
-        from: from || undefined,
-        to: to || undefined,
-        type: type || undefined,
-        category: category.trim() || undefined,
-        dialysis: dialysis === "" ? undefined : dialysis === "true",
-        limit: 20,
-        cursor: opts.cursor ?? undefined,
-        signal: ac.signal,
-        minDelayMs: MIN_SKELETON_MS,
+        token,
+        limit: pageLimit,
+        cursor: undefined,
+        from: filters.from ? new Date(filters.from).toISOString() : undefined,
+        to: filters.to ? new Date(filters.to).toISOString() : undefined,
+        type: filters.type || undefined,
+        category: filters.category || undefined,
+        dialysis: filters.dialysis || undefined,
       });
 
-      const page = res.data ?? [];
-      const meta = res.meta;
-
-      setNextCursor(meta?.nextCursor ?? null);
-
-      if (opts.reset) setItems(page);
-      else setItems((prev) => [...prev, ...page]);
-
-      setInitialLoading(false);
-    } catch (err: any) {
-      if (err?.name === "AbortError") return;
-
-      setInitialLoading(false);
-
-      const message =
-        err instanceof ApiError
-          ? err.message
-          : "Something went wrong. Please try again.";
-
-      setErrorMsg(message);
+      setItems(res.data || []);
+      setNextCursor(res.nextCursor);
+    } catch (e: any) {
+      setError(e?.message || "Failed to load transactions.");
     } finally {
       setLoading(false);
     }
   }
 
-  // initial load
-  useEffect(() => {
-    fetchPage({ reset: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  async function loadMore() {
+    if (!nextCursor) return;
+    setLoadingMore(true);
 
-  // refetch on filter change (debounced)
-  // NOTE: search tidak ikut (client-side)
-  useEffect(() => {
-    const run = debounce(() => {
-      fetchPage({ reset: true });
-    }, 350);
-
-    run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [from, to, type, category, dialysis]);
-
-  async function onCreate(payload: any) {
     try {
-      await createTransaction(payload);
-      toast.push({ type: "success", message: "Saved." });
-      await fetchPage({ reset: true });
-    } catch (err: any) {
-      const msg = err instanceof ApiError ? err.message : "We couldn’t save that change. Check your connection and try again.";
-      toast.push({ type: "error", message: msg });
-      throw err;
-    }
-  }
+      // const token = await getIdToken?.();
+      const token = await getAccessToken();
+      if (!token) throw new Error("Missing auth token.");
 
-  async function onEdit(id: string, payload: any) {
-    try {
-      await updateTransaction(id, payload);
-      toast.push({ type: "success", message: "Saved." });
-      await fetchPage({ reset: true });
-    } catch (err: any) {
-      const msg = err instanceof ApiError ? err.message : "We couldn’t save that change. Check your connection and try again.";
-      toast.push({ type: "error", message: msg });
-      throw err;
-    }
-  }
+      const res = await listTransactions({
+        token,
+        limit: pageLimit,
+        cursor: nextCursor || undefined,
+        from: filters.from ? new Date(filters.from).toISOString() : undefined,
+        to: filters.to ? new Date(filters.to).toISOString() : undefined,
+        type: filters.type || undefined,
+        category: filters.category || undefined,
+        dialysis: filters.dialysis || undefined,
+      });
 
-  async function onDeleteConfirm() {
-    if (!deleteTx) return;
-    setDeleteLoading(true);
-    try {
-      await deleteTransaction(deleteTx.id);
-      toast.push({ type: "success", message: "Saved." });
-      setDeleteTx(null);
-
-      // update local list cepat + sync ringan
-      setItems((prev) => prev.filter((x) => x.id !== deleteTx.id));
-      // optional: refetch to ensure cursor list consistent
-      await fetchPage({ reset: true });
-    } catch (err: any) {
-      const msg = err instanceof ApiError ? err.message : "Something went wrong. Please try again.";
-      toast.push({ type: "error", message: msg });
+      setItems((prev) => [...prev, ...(res.data || [])]);
+      setNextCursor(res.nextCursor);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to load more.");
     } finally {
-      setDeleteLoading(false);
+      setLoadingMore(false);
     }
   }
+
+  // refetch on server filters change (bukan q)
+  useEffect(() => {
+    fetchFirst();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.from, filters.to, filters.type, filters.category, filters.dialysis]);
+
+  // mobile: default tutup filters
+  useEffect(() => {
+    if (isDesktop) setFiltersOpen(true);
+    else setFiltersOpen(false);
+  }, [isDesktop]);
+
+  function openCreate() {
+    setMode("create");
+    setEditing(null);
+    if (!isDesktop) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  function openEdit(tx: Transaction) {
+    setMode("edit");
+    setEditing(tx);
+    if (!isDesktop) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  function closeForm() {
+    setMode("idle");
+    setEditing(null);
+  }
+
+  async function handleCreate(payload: Partial<Transaction>) {
+    // const token = await getIdToken?.();
+    const token = await getAccessToken();
+    if (!token) {
+      toast.error("You’re not signed in. Please log in again.");
+      return;
+    }
+
+    try {
+      await createTransaction({ token, payload });
+      toast.success("Transaction added.");
+      closeForm();
+      await fetchFirst();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to create transaction.");
+    }
+  }
+
+  async function handleUpdate(payload: Partial<Transaction>) {
+    // const token = await getIdToken?.();
+    const token = await getAccessToken();
+    if (!token) {
+      toast.error("You’re not signed in. Please log in again.");
+      return;
+    }
+    if (!editing?.id) return;
+
+    try {
+      await updateTransaction({ token, id: editing.id, payload });
+      toast.success("Transaction updated.");
+      closeForm();
+      await fetchFirst();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to update transaction.");
+    }
+  }
+
+  function askDelete(id: string) {
+    setDeletingId(id);
+    setConfirmOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!deletingId) return;
+
+    // const token = await getIdToken?.();
+    const token = await getAccessToken();
+    if (!token) {
+      toast.error("You’re not signed in. Please log in again.");
+      return;
+    }
+
+    setDeleteBusy(true);
+    try {
+      await deleteTransaction({ token, id: deletingId });
+      toast.success("Transaction deleted.");
+      setConfirmOpen(false);
+      setDeletingId(null);
+      await fetchFirst();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to delete transaction.");
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
+
+  const showFilters = isDesktop ? true : filtersOpen;
 
   return (
     <div className={styles.wrap}>
-      <header className={styles.top}>
-        <div className={styles.titleBlock}>
+      <div className={styles.topbar}>
+        <div>
           <h1 className={styles.title}>Transactions</h1>
-          <p className={styles.subtitle}>Track income and expenses with clarity.</p>
+          <p className={styles.subtitle}>
+            Keep it simple. Add what happened—PlanSave will help you stay on track.
+          </p>
         </div>
 
         <div className={styles.topActions}>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => setCreateOpen(true)}
-          >
-            <FontAwesomeIcon icon={faPlus} />
-            Add transaction
-          </button>
-
-          <button
-            type="button"
-            className="btn"
-            onClick={() => fetchPage({ reset: true })}
-            disabled={loading}
-            aria-label="Refresh"
-          >
-            <FontAwesomeIcon icon={faArrowRotateRight} />
+          <button type="button" className="btn" onClick={fetchFirst} disabled={loading}>
+            <FontAwesomeIcon icon={faRotateRight} />
             Refresh
           </button>
-        </div>
-      </header>
 
-      {/* Filters */}
-      <section className={styles.filters} aria-label="Filters">
-        <div className={styles.filtersRow}>
+          <button type="button" className="btn btn-primary" onClick={openCreate}>
+            <FontAwesomeIcon icon={faPlus} />
+            Add
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile filter toggle */}
+      {!isDesktop ? (
+        <div className={styles.mobileFilterRow}>
+          <button
+            type="button"
+            className={`btn ${styles.filterBtn}`}
+            onClick={() => setFiltersOpen((v) => !v)}
+          >
+            <FontAwesomeIcon icon={faFilter} />
+            Filter
+            <FontAwesomeIcon icon={faChevronDown} className={filtersOpen ? styles.chevUp : ""} />
+          </button>
+
           <div className={styles.searchWrap}>
-            <FontAwesomeIcon icon={faMagnifyingGlass} className={styles.searchIcon} />
             <input
-              className={styles.searchInput}
-              placeholder="Search category or note…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              className={styles.search}
+              value={filters.q}
+              onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
+              placeholder="Live search…"
             />
           </div>
+        </div>
+      ) : null}
 
-          <div className={styles.filterGroup}>
-            <div className={styles.filterLabel}>
-              <FontAwesomeIcon icon={faFilter} /> Filters
+      {/* Desktop search row */}
+      {isDesktop ? (
+        <div className={styles.desktopSearchRow}>
+          <input
+            className={styles.search}
+            value={filters.q}
+            onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
+            placeholder="Live search…"
+          />
+        </div>
+      ) : null}
+
+      {/* Filters */}
+      {showFilters ? (
+        <section className={`card ${styles.filters}`} aria-label="Filters">
+          <div className={styles.filtersGrid}>
+            <div className="field">
+              <label className="label">From</label>
+              <input
+                type="date"
+                className={styles.input}
+                value={filters.from}
+                onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
+              />
             </div>
 
-            <div className={styles.controls}>
-              <div className={styles.control}>
-                <label>From</label>
-                <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-              </div>
-
-              <div className={styles.control}>
-                <label>To</label>
-                <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-              </div>
-
-              <div className={styles.control}>
-                <label>Type</label>
-                <select value={type} onChange={(e) => setType(e.target.value as any)}>
-                  <option value="">All</option>
-                  <option value="expense">Expense</option>
-                  <option value="income">Income</option>
-                </select>
-              </div>
-
-              <div className={styles.control}>
-                <label>Category</label>
-                <input
-                  placeholder="Any"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  maxLength={60}
-                />
-              </div>
-
-              <div className={styles.control}>
-                <label>Dialysis</label>
-                <select value={dialysis} onChange={(e) => setDialysis(e.target.value as any)}>
-                  <option value="">All</option>
-                  <option value="true">Yes</option>
-                  <option value="false">No</option>
-                </select>
-              </div>
+            <div className="field">
+              <label className="label">To</label>
+              <input
+                type="date"
+                className={styles.input}
+                value={filters.to}
+                onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
+              />
             </div>
 
-            <div className={styles.hint}>
-              <FontAwesomeIcon icon={faCircleInfo} />
-              Live search filters the loaded results. Date/type/category/dialysis filters refetch from server.
+            <div className="field">
+              <label className="label">Type</label>
+              <select
+                className={styles.select}
+                value={filters.type}
+                onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value as any }))}
+              >
+                <option value="">All</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+            </div>
+
+            <div className="field">
+              <label className="label">Category</label>
+              <input
+                className={styles.input}
+                value={filters.category}
+                onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value }))}
+                placeholder="e.g. Food"
+              />
+            </div>
+
+            <div className="field">
+              <label className="label">Dialysis</label>
+              <select
+                className={styles.select}
+                value={filters.dialysis}
+                onChange={(e) => setFilters((f) => ({ ...f, dialysis: e.target.value as any }))}
+              >
+                <option value="">All</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
             </div>
           </div>
+        </section>
+      ) : null}
+
+      {/* Form area (NOT modal) */}
+      {mode !== "idle" ? (
+        <FormTransaction
+          mode={mode === "create" ? "create" : "edit"}
+          initial={editing}
+          onCancel={closeForm}
+          onSubmit={mode === "create" ? handleCreate : handleUpdate}
+          categorySuggestions={categorySuggestions}
+        />
+      ) : null}
+
+      {/* Table */}
+      <section className={`card ${styles.tableCard}`} aria-label="Transactions table">
+        <div className={styles.tableHead}>
+          <h2 className={styles.tableTitle}>List</h2>
+          <p className={styles.tableSub}>Showing {visibleItems.length} item(s).</p>
         </div>
+
+        {error ? (
+          <div className={styles.state}>
+            <div className={styles.stateTitle}>Something went wrong</div>
+            <div className={styles.stateText}>{error}</div>
+            <button className="btn btn-primary" onClick={fetchFirst}>
+              Try again
+            </button>
+          </div>
+        ) : loading || searching ? (
+          <div className={styles.skeletonWrap} aria-label="Loading">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className={styles.skeletonRow} />
+            ))}
+          </div>
+        ) : visibleItems.length === 0 ? (
+          <div className={styles.state}>
+            <div className={styles.stateTitle}>No transactions yet</div>
+            <div className={styles.stateText}>
+              Add your first transaction—small steps add up.
+            </div>
+            <button className="btn btn-primary" onClick={openCreate}>
+              <FontAwesomeIcon icon={faPlus} />
+              Add transaction
+            </button>
+          </div>
+        ) : (
+          <div className={styles.tableScroll}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Category</th>
+                  <th>Note</th>
+                  <th className={styles.right}>Amount</th>
+                  <th className={styles.actionsCol}>Actions</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {visibleItems.map((tx) => {
+                  const currency = (tx.currency || "USD") as "USD" | "IDR";
+                  return (
+                    <tr key={tx.id}>
+                      <td>{tx.date?.slice(0, 10)}</td>
+                      <td className={tx.type === "income" ? styles.income : styles.expense}>
+                        {tx.type}
+                      </td>
+                      <td>
+                        {tx.category}
+                        {tx.isDialysis ? <span className={styles.dialysisTag}>Dialysis</span> : null}
+                      </td>
+                      <td className={styles.note}>{tx.note || "-"}</td>
+                      <td className={styles.right}>
+                        {tx.type === "income" ? "+" : "-"}
+                        {formatMoney(Math.abs(tx.amount), currency)}
+                      </td>
+                      <td className={styles.actionsCol}>
+                        <button className={`btn ${styles.rowBtn}`} onClick={() => openEdit(tx)}>
+                          <FontAwesomeIcon icon={faPenToSquare} />
+                        </button>
+                        <button
+                          className={`btn ${styles.rowBtn} ${styles.deleteBtn}`}
+                          onClick={() => askDelete(tx.id)}
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Cursor pagination */}
+        {!loading && !error ? (
+          <div className={styles.pagination}>
+            <button
+              type="button"
+              className="btn"
+              onClick={loadMore}
+              disabled={!nextCursor || loadingMore}
+            >
+              {loadingMore ? "Loading..." : nextCursor ? "Load more" : "No more"}
+            </button>
+          </div>
+        ) : null}
       </section>
 
-      {/* States */}
-      {initialLoading ? (
-        <TableSkeleton rows={7} />
-      ) : errorMsg ? (
-        <div className={styles.stateCard} role="alert">
-          <div className={styles.stateTitle}>Something went wrong.</div>
-          <div className={styles.stateText}>{errorMsg}</div>
-          <button type="button" className="btn btn-primary" onClick={() => fetchPage({ reset: true })}>
-            Try again
-          </button>
-        </div>
-      ) : filteredItems.length === 0 ? (
-        <div className={styles.stateCard}>
-          <div className={styles.stateTitle}>No transactions yet</div>
-          <div className={styles.stateText}>
-            No transactions yet. Add your first one to start tracking your month.
-          </div>
-          <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
-            <FontAwesomeIcon icon={faPlus} />
-            Add transaction
-          </button>
-        </div>
-      ) : (
-        <>
-          <section className={styles.tableWrap} aria-label="Transactions list">
-            <div className={styles.tableHeader}>
-              <div>Date</div>
-              <div>Category</div>
-              <div>Type</div>
-              <div>Amount</div>
-              <div className={styles.actionsCol}>Actions</div>
-            </div>
-
-            {loading ? (
-              <div className={styles.inlineLoading}>Loading…</div>
-            ) : null}
-
-            <div className={styles.tableBody}>
-              {filteredItems.map((t) => {
-                const isExpense = t.type === "expense";
-                const amount = formatMoney(t.amountCents, t.currency ?? "USD");
-
-                return (
-                  <div key={t.id} className={styles.row}>
-                    <div className={styles.cell} data-label="Date">
-                      {t.date}
-                      {t.isDialysisRelated ? <span className={styles.badge}>Dialysis</span> : null}
-                    </div>
-
-                    <div className={styles.cell} data-label="Category">
-                      <div className={styles.primary}>{t.category}</div>
-                      {t.note ? <div className={styles.secondary}>{t.note}</div> : null}
-                    </div>
-
-                    <div className={styles.cell} data-label="Type">
-                      <span className={`${styles.pill} ${isExpense ? styles.pillExpense : styles.pillIncome}`}>
-                        {isExpense ? "Expense" : "Income"}
-                      </span>
-                    </div>
-
-                    <div className={styles.cell} data-label="Amount">
-                      <span className={isExpense ? styles.amountNeg : styles.amountPos}>
-                        {isExpense ? `-${amount}` : `+${amount}`}
-                      </span>
-                    </div>
-
-                    <div className={`${styles.cell} ${styles.actions}`} data-label="Actions">
-                      <button
-                        type="button"
-                        className={styles.iconBtn}
-                        aria-label="Edit"
-                        onClick={() => setEditTx(t)}
-                      >
-                        <FontAwesomeIcon icon={faPen} />
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.iconBtn} ${styles.danger}`}
-                        aria-label="Delete"
-                        onClick={() => setDeleteTx(t)}
-                      >
-                        <FontAwesomeIcon icon={faTrash} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* Pagination */}
-          <div className={styles.pagination}>
-            <div className={styles.count}>
-              Showing <b>{filteredItems.length}</b> {search.trim() ? "(filtered)" : ""} items
-            </div>
-
-            {nextCursor ? (
-              <button
-                type="button"
-                className="btn"
-                disabled={loading}
-                onClick={() => fetchPage({ reset: false, cursor: nextCursor })}
-              >
-                Load more
-              </button>
-            ) : (
-              <div className={styles.end}>You’re all caught up.</div>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* Modals */}
-      <TransactionFormModal
-        open={createOpen}
-        mode="create"
-        onClose={() => setCreateOpen(false)}
-        onSubmit={onCreate}
-      />
-
-      <TransactionFormModal
-        open={!!editTx}
-        mode="edit"
-        initial={editTx}
-        onClose={() => setEditTx(null)}
-        onSubmit={(payload) => onEdit(editTx!.id, payload)}
-      />
-
-      <ConfirmModal
-        open={!!deleteTx}
-        title="Delete transaction?"
-        description={
-          deleteTx
-            ? `This will remove "${deleteTx.category}" on ${deleteTx.date}. You can’t undo this action.`
-            : ""
-        }
-        confirmText="Delete"
-        cancelText="Cancel"
-        danger
-        loading={deleteLoading}
-        onConfirm={onDeleteConfirm}
-        onClose={() => !deleteLoading && setDeleteTx(null)}
+      <ConfirmDeleteModal
+        open={confirmOpen}
+        onCancel={() => {
+          if (deleteBusy) return;
+          setConfirmOpen(false);
+          setDeletingId(null);
+        }}
+        onConfirm={confirmDelete}
+        busy={deleteBusy}
       />
     </div>
   );

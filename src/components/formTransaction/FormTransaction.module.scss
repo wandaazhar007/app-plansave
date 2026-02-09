@@ -1,0 +1,96 @@
+// @use "../../../styles/variables" as v;
+// @use "../../../styles/responsive" as r;
+
+@use "../../styles/variables" as v;
+@use "../../styles/responsive" as r;
+
+.card {
+  padding: v.$space-6;
+}
+
+.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: v.$space-4;
+  margin-bottom: v.$space-4;
+}
+
+.title {
+  font-size: v.$text-xl;
+  font-weight: 900;
+  margin: 0;
+}
+
+.sub {
+  margin-top: v.$space-2;
+  color: var(--ps-muted);
+  line-height: v.$line-relaxed;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-4;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: v.$space-4;
+
+  @include r.up(md) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.full {
+  @include r.up(md) {
+    grid-column: 1 / -1;
+  }
+}
+
+.input,
+.select {
+  width: 100%;
+  padding: 1.2rem 1.2rem;
+  border-radius: v.$radius-md;
+  border: 0.1rem solid var(--ps-border);
+  background: var(--ps-surface);
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: rgba(14, 165, 183, 0.5);
+  box-shadow: 0 0 0 0.4rem rgba(14, 165, 183, 0.18);
+}
+
+.inputError {
+  border-color: rgba(239, 68, 68, 0.7);
+  box-shadow: 0 0 0 0.4rem rgba(239, 68, 68, 0.16);
+}
+
+.error {
+  margin-top: 0.6rem;
+  font-size: v.$text-sm;
+  color: var(--ps-danger);
+}
+
+.checkRow {
+  display: inline-flex;
+  align-items: center;
+  gap: v.$space-2;
+  color: var(--ps-text);
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  gap: v.$space-3;
+  justify-content: flex-end;
+
+  @include r.down(sm) {
+    flex-direction: column-reverse;
+  }
+}

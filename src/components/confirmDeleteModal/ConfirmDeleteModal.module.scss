@@ -1,0 +1,55 @@
+@use "../../styles/variables" as v;
+@use "../../styles/responsive" as r;
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.45);
+  display: grid;
+  place-items: center;
+  padding: v.$space-6;
+  z-index: 80;
+}
+
+.modal {
+  width: 100%;
+  max-width: 48rem;
+  background: var(--ps-surface);
+  border: 0.1rem solid var(--ps-border);
+  border-radius: v.$radius-lg;
+  box-shadow: var(--ps-shadow-lg);
+  padding: v.$space-6;
+}
+
+.title {
+  margin: 0;
+  font-size: v.$text-xl;
+  font-weight: 900;
+  color: var(--ps-text);
+}
+
+.desc {
+  margin-top: v.$space-2;
+  color: var(--ps-muted);
+  line-height: v.$line-relaxed;
+}
+
+.actions {
+  margin-top: v.$space-6;
+  display: flex;
+  gap: v.$space-3;
+  justify-content: flex-end;
+
+  @include r.down(sm) {
+    flex-direction: column-reverse;
+  }
+}
+
+.danger {
+  background: var(--ps-danger);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.danger:hover {
+  background: rgba(239, 68, 68, 0.92);
+}

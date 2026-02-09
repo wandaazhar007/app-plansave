@@ -11,6 +11,7 @@ import AppLayout from "./pages/app/AppLayout";
 import DashboardPage from "./pages/dashboard/DashboardPage";
 import TransactionsPage from "./pages/transactions/TransactionsPage";
 
+
 import { ToastProvider } from "./components/toast/ToastProvider";
 
 const APP_NAME = "PlanSave — Supportive budgeting for everyday life";
@@ -98,7 +99,6 @@ export default function App() {
 
           {/* ✅ Transactions module */}
           <Route path="transactions" element={<TransactionsPage />} />
-
           <Route path="budgets" element={<Placeholder title="Budgets" />} />
           <Route path="recurring" element={<Placeholder title="Recurring" />} />
           <Route path="analytics" element={<Placeholder title="Analytics" />} />

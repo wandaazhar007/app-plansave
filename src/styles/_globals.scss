@@ -196,14 +196,24 @@ html:focus-within {
   transform: translateY(0);
 }
 
+// .btn-primary {
+//   background: var(--ps-primary);
+//   border-color: rgba(76, 125, 240, 0.35);
+//   color: #ffffff;
+// }
+
+// .btn-primary:hover {
+//   background: rgba(76, 125, 240, 0.92);
+// }
+
 .btn-primary {
   background: var(--ps-primary);
-  border-color: rgba(76, 125, 240, 0.35);
+  border-color: rgba(14, 165, 183, 0.35);
   color: #ffffff;
 }
 
 .btn-primary:hover {
-  background: rgba(76, 125, 240, 0.92);
+  background: rgba(14, 165, 183, 0.92);
 }
 
 .btn-ghost {
