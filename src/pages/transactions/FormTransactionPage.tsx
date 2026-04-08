@@ -1,28 +1,125 @@
+// // src/pages/transactions/FormTransactionPage.tsx
+// import { useMemo, useState } from "react";
+// import { useLocation, useNavigate } from "react-router-dom";
+// import toast from "react-hot-toast";
+
+// import { useAuth } from "../../lib/auth/useAuth";
+// import type { Transaction } from "../../types/transaction";
+// import { createTransaction, updateTransaction } from "../../services/transactionsService";
+
+// import FormTransaction from "../../components/formTransaction/FormTransaction";
+// import styles from "./FormTransactionPage.module.scss";
+
+// type LocationState =
+//   | {
+//     mode: "create";
+//   }
+//   | {
+//     mode: "edit";
+//     initial: Transaction;
+//   };
+
+// export default function FormTransactionPage() {
+//   const navigate = useNavigate();
+//   const location = useLocation();
+//   const { getAccessToken } = useAuth();
+
+//   const state = (location.state || { mode: "create" }) as LocationState;
+
+//   const mode = state.mode;
+//   const initial = "initial" in state ? state.initial : null;
+
+//   const [busy, setBusy] = useState(false);
+
+//   const title = useMemo(() => {
+//     return mode === "create" ? "Add transaction" : "Edit transaction";
+//   }, [mode]);
+
+//   function goBack(refresh?: boolean) {
+//     navigate("/app/transactions", { replace: true, state: refresh ? { refresh: true } : null });
+//   }
+
+//   async function onSubmit(payload: Partial<Transaction>) {
+//     const token = await getAccessToken();
+//     if (!token) {
+//       toast.error("You’re not signed in. Please log in again.");
+//       goBack(false);
+//       return;
+//     }
+
+//     setBusy(true);
+//     try {
+//       if (mode === "create") {
+//         await createTransaction({ token, payload });
+//         toast.success("Transaction added.");
+//       } else {
+//         if (!initial?.id) {
+//           toast.error("Missing transaction id.");
+//           return;
+//         }
+//         await updateTransaction({ token, id: initial.id, payload });
+//         toast.success("Transaction updated.");
+//       }
+
+//       goBack(true);
+//     } catch (e: any) {
+//       toast.error(e?.message || "Failed to save transaction.");
+//     } finally {
+//       setBusy(false);
+//     }
+//   }
+
+//   return (
+//     <div className={styles.wrap}>
+//       <div className={styles.header}>
+//         <h1 className={styles.pageTitle}>{title}</h1>
+//         <p className={styles.pageSub}>
+//           Keep it simple—one transaction at a time.
+//         </p>
+//       </div>
+
+//       <FormTransaction
+//         mode={mode}
+//         initial={initial}
+//         onCancel={() => goBack(false)}
+//         onSubmit={onSubmit}
+//         busy={busy}
+//         categorySuggestions={[]}
+//       />
+//     </div>
+//   );
+// }
+
+
+
+
 // src/pages/transactions/FormTransactionPage.tsx
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
 
 import { useAuth } from "../../lib/auth/useAuth";
 import type { Transaction } from "../../types/transaction";
 import { createTransaction, updateTransaction } from "../../services/transactionsService";
+import { useToast } from "../../components/toast/ToastProvider";
 
 import FormTransaction from "../../components/formTransaction/FormTransaction";
 import styles from "./FormTransactionPage.module.scss";
 
 type LocationState =
-  | {
-    mode: "create";
-  }
-  | {
-    mode: "edit";
-    initial: Transaction;
-  };
+  | { mode: "create" }
+  | { mode: "edit"; initial: Transaction };
+
+type RedirectToast = {
+  type: "success" | "error" | "info";
+  title?: string;
+  message: string;
+};
 
 export default function FormTransactionPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { getAccessToken } = useAuth();
+  const { push } = useToast();
 
   const state = (location.state || { mode: "create" }) as LocationState;
 
@@ -35,15 +132,19 @@ export default function FormTransactionPage() {
     return mode === "create" ? "Add transaction" : "Edit transaction";
   }, [mode]);
 
-  function goBack(refresh?: boolean) {
-    navigate("/app/transactions", { replace: true, state: refresh ? { refresh: true } : null });
+  function goBack(opts?: { refresh?: boolean; toast?: RedirectToast }) {
+    navigate("/app/transactions", {
+      replace: true,
+      state: opts?.refresh || opts?.toast ? { refresh: !!opts?.refresh, toast: opts?.toast } : null,
+    });
   }
 
   async function onSubmit(payload: Partial<Transaction>) {
     const token = await getAccessToken();
     if (!token) {
-      toast.error("You’re not signed in. Please log in again.");
-      goBack(false);
+      // auth error: tampilkan sekarang (di page ini) karena kita tidak akan redirect sukses
+      push({ type: "error", title: "Session expired", message: "Please sign in again." });
+      goBack({ refresh: false });
       return;
     }
 
@@ -51,19 +152,41 @@ export default function FormTransactionPage() {
     try {
       if (mode === "create") {
         await createTransaction({ token, payload });
-        toast.success("Transaction added.");
+
+        // ✅ toast tampil di list page setelah redirect
+        goBack({
+          refresh: true,
+          toast: {
+            type: "success",
+            title: "Saved",
+            message: "Transaction added successfully.",
+          },
+        });
       } else {
         if (!initial?.id) {
-          toast.error("Missing transaction id.");
+          push({ type: "error", title: "Missing data", message: "Transaction id is missing." });
           return;
         }
-        await updateTransaction({ token, id: initial.id, payload });
-        toast.success("Transaction updated.");
-      }
 
-      goBack(true);
+        await updateTransaction({ token, id: initial.id, payload });
+
+        // ✅ toast tampil di list page setelah redirect
+        goBack({
+          refresh: true,
+          toast: {
+            type: "success",
+            title: "Updated",
+            message: "Transaction updated successfully.",
+          },
+        });
+      }
     } catch (e: any) {
-      toast.error(e?.message || "Failed to save transaction.");
+      // error tetap tampil di page form (biar user tahu gagal)
+      push({
+        type: "error",
+        title: "Failed",
+        message: e?.message || "Failed to save transaction.",
+      });
     } finally {
       setBusy(false);
     }
@@ -73,15 +196,13 @@ export default function FormTransactionPage() {
     <div className={styles.wrap}>
       <div className={styles.header}>
         <h1 className={styles.pageTitle}>{title}</h1>
-        <p className={styles.pageSub}>
-          Keep it simple—one transaction at a time.
-        </p>
+        <p className={styles.pageSub}>Keep it simple—one transaction at a time.</p>
       </div>
 
       <FormTransaction
         mode={mode}
         initial={initial}
-        onCancel={() => goBack(false)}
+        onCancel={() => goBack({ refresh: false })}
         onSubmit={onSubmit}
         busy={busy}
         categorySuggestions={[]}
