@@ -10,7 +10,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AppLayout from "./pages/app/AppLayout";
 import DashboardPage from "./pages/dashboard/DashboardPage";
 import TransactionsPage from "./pages/transactions/TransactionsPage";
-
+import FormTransactionPage from "./pages/transactions/FormTransactionPage";
 
 import { ToastProvider } from "./components/toast/ToastProvider";
 
@@ -99,6 +99,7 @@ export default function App() {
 
           {/* ✅ Transactions module */}
           <Route path="transactions" element={<TransactionsPage />} />
+          <Route path="transactions/form-transaction" element={<FormTransactionPage />} />
           <Route path="budgets" element={<Placeholder title="Budgets" />} />
           <Route path="recurring" element={<Placeholder title="Recurring" />} />
           <Route path="analytics" element={<Placeholder title="Analytics" />} />

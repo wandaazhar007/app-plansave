@@ -1,10 +1,9 @@
-//src/components/formTransaction/FormTransaction.tsx
+// src/components/formTransaction/FormTransaction.tsx
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFloppyDisk, faXmark } from "@fortawesome/free-solid-svg-icons";
 
-// import type { Transaction, TransactionType } from "../types";
 import type { Transaction, TransactionType } from "../../types/transaction";
 import styles from "./FormTransaction.module.scss";
 
@@ -17,11 +16,17 @@ type Props = {
   categorySuggestions?: string[];
 };
 
-const NOTE_MAX = 120;
+const NOTE_MAX = 500;
 
-function toInputDate(iso?: string) {
-  if (!iso) return "";
-  return iso.slice(0, 10);
+function toInputDate(date?: string) {
+  if (!date) return "";
+  return date.slice(0, 10);
+}
+
+function amountToCents(amountStr: string) {
+  const n = Number(amountStr);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.round(n * 100);
 }
 
 export default function FormTransaction({
@@ -33,40 +38,52 @@ export default function FormTransaction({
   categorySuggestions = [],
 }: Props) {
   const [type, setType] = useState<TransactionType>(initial?.type || "expense");
-  const [amount, setAmount] = useState<string>(
-    initial?.amount != null ? String(initial.amount) : ""
-  );
+
+  // tampilkan amount normal, simpan cents di payload
+  const [amount, setAmount] = useState<string>(() => {
+    if (initial?.amountCents != null) return (initial.amountCents / 100).toFixed(2);
+    return "";
+  });
+
   const [currency, setCurrency] = useState<"USD" | "IDR">(
-    initial?.currency || "USD"
+    (initial?.currency as any) || "USD"
   );
-  const [date, setDate] = useState<string>(toInputDate(initial?.date));
+
+  const [date, setDate] = useState<string>(toInputDate(initial?.date)); // YYYY-MM-DD
   const [category, setCategory] = useState<string>(initial?.category || "");
-  const [isDialysis, setIsDialysis] = useState<boolean>(!!initial?.isDialysis);
+  const [isDialysisRelated, setIsDialysisRelated] = useState<boolean>(
+    !!initial?.isDialysisRelated
+  );
   const [note, setNote] = useState<string>(initial?.note || "");
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
-    const amt = Number(amount);
+    const cents = amountToCents(amount);
 
     if (!amount.trim()) e.amount = "Amount is required.";
-    else if (Number.isNaN(amt) || !Number.isFinite(amt) || amt <= 0)
-      e.amount = "Amount must be a number greater than 0.";
+    else if (cents === null) e.amount = "Amount must be a number greater than 0.";
 
     if (!date) e.date = "Date is required.";
+    else if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) e.date = "Date must be YYYY-MM-DD.";
+
     if (!category.trim()) e.category = "Category is required.";
 
-    if (note.length > NOTE_MAX)
-      e.note = `Note must be ${NOTE_MAX} characters or less.`;
+    if (note.length > NOTE_MAX) e.note = `Note must be ${NOTE_MAX} characters or less.`;
 
     return e;
   }, [amount, date, category, note]);
 
   const isValid = Object.keys(errors).length === 0;
 
+  function showError(key: string) {
+    return !!touched[key] && !!errors[key];
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
     setTouched({
       type: true,
       amount: true,
@@ -81,19 +98,21 @@ export default function FormTransaction({
       return;
     }
 
+    const amountCents = amountToCents(amount);
+    if (amountCents === null) {
+      toast.error("Please enter a valid amount.");
+      return;
+    }
+
     await onSubmit({
       type,
-      amount: Number(amount),
+      amountCents,
       currency,
-      date: new Date(date).toISOString(),
+      date, // ✅ YYYY-MM-DD
       category: category.trim(),
-      isDialysis,
-      note: note.trim() || null,
+      isDialysisRelated,
+      note: note.trim() ? note.trim() : undefined,
     });
-  }
-
-  function showError(key: string) {
-    return !!touched[key] && !!errors[key];
   }
 
   return (
@@ -113,7 +132,7 @@ export default function FormTransaction({
         </button>
       </div>
 
-      <form className={styles.form} onSubmit={handleSubmit}>
+      <form className={styles.form} onSubmit={handleSubmit} noValidate>
         <div className={styles.grid}>
           <div className="field">
             <label className="label">Type</label>
@@ -180,6 +199,7 @@ export default function FormTransaction({
               onChange={(e) => setCategory(e.target.value)}
               onBlur={() => setTouched((t) => ({ ...t, category: true }))}
               disabled={busy}
+              maxLength={60}
             />
             <datalist id="category-suggestions">
               {categorySuggestions.map((c) => (
@@ -193,8 +213,8 @@ export default function FormTransaction({
             <label className={styles.checkRow}>
               <input
                 type="checkbox"
-                checked={isDialysis}
-                onChange={(e) => setIsDialysis(e.target.checked)}
+                checked={isDialysisRelated}
+                onChange={(e) => setIsDialysisRelated(e.target.checked)}
                 disabled={busy}
               />
               <span>Dialysis related</span>
@@ -210,6 +230,7 @@ export default function FormTransaction({
               onChange={(e) => setNote(e.target.value)}
               onBlur={() => setTouched((t) => ({ ...t, note: true }))}
               disabled={busy}
+              maxLength={NOTE_MAX}
             />
             <div className="help">
               {note.length}/{NOTE_MAX}
