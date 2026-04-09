@@ -82,7 +82,7 @@ export default function TransactionsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
 
-  const [pageLimit] = useState(20);
+  const [pageLimit] = useState(3);
 
   const hasDateFilter = !!filters.from || !!filters.to;
 
