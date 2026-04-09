@@ -56,6 +56,7 @@ export default function TransactionsPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
+
   // UI
   const [filtersOpen, setFiltersOpen] = useState(false);
 
