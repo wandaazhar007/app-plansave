@@ -9,6 +9,7 @@ import {
   faFilter,
   faRotateRight,
   faChevronDown,
+  faArrowRotateLeft,
 } from "@fortawesome/free-solid-svg-icons";
 
 import useMediaQuery from "../../lib/hooks/useMediaQuery";
@@ -24,7 +25,7 @@ import styles from "./TransactionsPage.module.scss";
 type Filters = {
   q: string;
   from: string; // YYYY-MM-DD
-  to: string;   // YYYY-MM-DD
+  to: string; // YYYY-MM-DD
 };
 
 type RedirectToast = {
@@ -56,7 +57,6 @@ export default function TransactionsPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-
   // UI
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -84,16 +84,18 @@ export default function TransactionsPage() {
 
   const [pageLimit] = useState(20);
 
+  const hasDateFilter = !!filters.from || !!filters.to;
+
   // live search debounce + skeleton
   useEffect(() => {
     setSearching(true);
 
-    const t = setTimeout(() => {
+    const t = window.setTimeout(() => {
       setDebouncedQ(filters.q);
-      setTimeout(() => setSearching(false), 450);
+      window.setTimeout(() => setSearching(false), 450);
     }, 250);
 
-    return () => clearTimeout(t);
+    return () => window.clearTimeout(t);
   }, [filters.q]);
 
   // client-side live search
@@ -163,13 +165,12 @@ export default function TransactionsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.from, filters.to]);
 
-  // mobile filter open/close
+  // Default behavior: desktop open, mobile closed
   useEffect(() => {
-    if (isDesktop) setFiltersOpen(true);
-    else setFiltersOpen(false);
+    setFiltersOpen(isDesktop);
   }, [isDesktop]);
 
-  // ✅ toast + refresh after redirect from form page
+  // toast + refresh after redirect from form page
   useEffect(() => {
     const st = location.state as { refresh?: boolean; toast?: RedirectToast } | null;
 
@@ -185,7 +186,6 @@ export default function TransactionsPage() {
       fetchFirst();
     }
 
-    // clear state so it won't repeat
     if (st?.toast || st?.refresh) {
       navigate(".", { replace: true, state: null });
     }
@@ -235,19 +235,22 @@ export default function TransactionsPage() {
     }
   }
 
-  const showFilters = isDesktop ? true : filtersOpen;
+  function onResetDates() {
+    setFilters((f) => ({ ...f, from: "", to: "" }));
+  }
 
   return (
     <div className={styles.wrap}>
       <div className={styles.topbar}>
-        <div>
+        <div className={styles.heading}>
           <h1 className={styles.title}>Transactions</h1>
           <p className={styles.subtitle}>
             Keep it simple. Add what happened—PlanSave will help you stay on track.
           </p>
         </div>
 
-        <div className={styles.topActions}>
+        {/* Actions: always horizontal */}
+        <div className={styles.topActions} aria-label="Top actions">
           <button type="button" className="btn" onClick={fetchFirst} disabled={loading}>
             <FontAwesomeIcon icon={faRotateRight} />
             Refresh
@@ -257,48 +260,34 @@ export default function TransactionsPage() {
             <FontAwesomeIcon icon={faPlus} />
             Add
           </button>
-        </div>
-      </div>
 
-      {/* Mobile filter toggle */}
-      {!isDesktop ? (
-        <div className={styles.mobileFilterRow}>
           <button
             type="button"
             className={`btn ${styles.filterBtn}`}
             onClick={() => setFiltersOpen((v) => !v)}
+            aria-expanded={filtersOpen}
+            aria-controls="tx-filters"
           >
             <FontAwesomeIcon icon={faFilter} />
             Filter
             <FontAwesomeIcon icon={faChevronDown} className={filtersOpen ? styles.chevUp : ""} />
           </button>
-
-          <div className={styles.searchWrap}>
-            <input
-              className={styles.search}
-              value={filters.q}
-              onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
-              placeholder="Live search…"
-            />
-          </div>
         </div>
-      ) : null}
+      </div>
 
-      {/* Desktop search row */}
-      {isDesktop ? (
-        <div className={styles.desktopSearchRow}>
-          <input
-            className={styles.search}
-            value={filters.q}
-            onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
-            placeholder="Live search…"
-          />
-        </div>
-      ) : null}
+      {/* Search row (always shown) */}
+      <div className={styles.searchRow}>
+        <input
+          className={styles.search}
+          value={filters.q}
+          onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
+          placeholder="Live search…"
+        />
+      </div>
 
-      {/* Filters (ONLY From/To) */}
-      {showFilters ? (
-        <section className={`card ${styles.filters}`} aria-label="Filters">
+      {/* Filters panel */}
+      {filtersOpen ? (
+        <section id="tx-filters" className={`card ${styles.filters}`} aria-label="Filters">
           <div className={styles.filtersGrid}>
             <div className="field">
               <label className="label">From</label>
@@ -318,6 +307,15 @@ export default function TransactionsPage() {
                 value={filters.to}
                 onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
               />
+            </div>
+
+            <div className={styles.resetSlot}>
+              {hasDateFilter ? (
+                <button type="button" className={`btn ${styles.resetBtn}`} onClick={onResetDates}>
+                  <FontAwesomeIcon icon={faArrowRotateLeft} />
+                  Reset
+                </button>
+              ) : null}
             </div>
           </div>
         </section>
@@ -371,22 +369,27 @@ export default function TransactionsPage() {
                 {visibleItems.map((tx) => {
                   const currency = (tx.currency || "USD") as "USD" | "IDR";
                   const isIncome = tx.type === "income";
+                  const sign = isIncome ? "+" : "-";
+                  const signedAmount = `${sign}${formatMoney(Math.abs(tx.amountCents), currency)}`;
 
                   return (
                     <tr key={tx.id}>
                       <td>{tx.date}</td>
-                      <td className={isIncome ? styles.income : styles.expense}>{tx.type}</td>
-                      <td>
-                        {tx.category}
-                        {tx.isDialysisRelated ? (
-                          <span className={styles.dialysisTag}>Dialysis</span>
-                        ) : null}
+
+                      {/* Type back to normal text, but colored */}
+                      <td className={isIncome ? styles.typeIncome : styles.typeExpense}>
+                        {tx.type}
                       </td>
+
+                      <td>{tx.category}</td>
+
                       <td className={styles.note}>{tx.note || "-"}</td>
-                      <td className={styles.right}>
-                        {isIncome ? "+" : "-"}
-                        {formatMoney(Math.abs(tx.amountCents), currency)}
+
+                      {/* Amount colored + signed */}
+                      <td className={`${styles.right} ${isIncome ? styles.amountIncome : styles.amountExpense}`}>
+                        {signedAmount}
                       </td>
+
                       <td className={styles.actionsCol}>
                         <button className={`btn ${styles.rowBtn}`} onClick={() => goEdit(tx)}>
                           <FontAwesomeIcon icon={faPenToSquare} />
