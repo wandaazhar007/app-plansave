@@ -57,7 +57,7 @@
   transform: rotate(180deg);
 }
 
-/* Search row always visible */
+/* Search row */
 .searchRow {
   width: 100%;
 }
@@ -74,6 +74,73 @@
   outline: none;
   border-color: rgba(14, 165, 183, 0.5);
   box-shadow: 0 0 0 0.4rem rgba(14, 165, 183, 0.18);
+}
+
+/* ✅ Summary always visible */
+.summaryBox {
+  padding: v.$space-6;
+}
+
+.summaryTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: v.$space-4;
+  margin-bottom: v.$space-4;
+
+  @include r.down(sm) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.summaryTitle {
+  font-weight: 900;
+  font-size: v.$text-lg;
+}
+
+.summaryRange {
+  color: var(--ps-muted);
+  font-size: v.$text-sm;
+}
+
+.summaryError {
+  color: var(--ps-danger);
+  font-size: v.$text-sm;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: v.$space-4;
+
+  @include r.up(md) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.summaryCard {
+  padding: v.$space-5;
+}
+
+.summaryLabel {
+  color: var(--ps-muted);
+  font-size: v.$text-sm;
+  font-weight: 800;
+}
+
+.summaryValueIncome {
+  margin-top: v.$space-2;
+  font-size: v.$text-2xl;
+  font-weight: 900;
+  color: var(--ps-success);
+}
+
+.summaryValueExpense {
+  margin-top: v.$space-2;
+  font-size: v.$text-2xl;
+  font-weight: 900;
+  color: var(--ps-danger);
 }
 
 /* Filters */
@@ -185,7 +252,7 @@
   border-color: rgba(239, 68, 68, 0.25);
 }
 
-/* ✅ Type colored (text remains income/expense) */
+/* Type colored */
 .typeIncome {
   color: var(--ps-success);
   font-weight: 900;
@@ -198,7 +265,7 @@
   text-transform: lowercase;
 }
 
-/* ✅ Amount colored */
+/* Amount colored */
 .amountIncome {
   color: var(--ps-success);
   font-weight: 900;
