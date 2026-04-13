@@ -8,11 +8,12 @@
   gap: v.$space-6;
 }
 
-.topbar {
+/* ✅ toolbar: actions + search inline */
+.toolbar {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: v.$space-4;
-  align-items: flex-start;
 
   @include r.down(md) {
     flex-direction: column;
@@ -20,46 +21,28 @@
   }
 }
 
-.heading {
-  min-width: 0;
-}
-
-.title {
-  font-size: v.$text-3xl;
-  line-height: v.$line-tight;
-  font-weight: 900;
-}
-
-.subtitle {
-  margin-top: v.$space-2;
-  color: var(--ps-muted);
-  line-height: v.$line-relaxed;
-}
-
-.topActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: v.$space-3;
+.actions {
+  display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
-
-  @include r.down(md) {
-    justify-content: flex-start;
-  }
+  gap: v.$space-3;
+  flex-wrap: nowrap;
 }
 
 .filterBtn {
   justify-content: space-between;
-  min-width: 12.6rem;
 }
 
 .chevUp {
   transform: rotate(180deg);
 }
 
-/* Search row */
-.searchRow {
-  width: 100%;
+.searchInline {
+  flex: 1;
+  min-width: 28rem;
+
+  @include r.down(md) {
+    min-width: 0;
+  }
 }
 
 .search {
@@ -76,7 +59,44 @@
   box-shadow: 0 0 0 0.4rem rgba(14, 165, 183, 0.18);
 }
 
-/* ✅ Summary always visible */
+/* Filters */
+.filters {
+  padding: v.$space-6;
+}
+
+.filtersGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: v.$space-4;
+
+  @include r.up(md) {
+    grid-template-columns: repeat(3, 1fr);
+    align-items: end;
+  }
+}
+
+.resetSlot {
+  display: flex;
+  justify-content: flex-end;
+
+  @include r.down(md) {
+    justify-content: flex-start;
+  }
+}
+
+.resetBtn {
+  white-space: nowrap;
+}
+
+.input {
+  width: 100%;
+  padding: 1.2rem 1.2rem;
+  border-radius: v.$radius-md;
+  border: 0.1rem solid var(--ps-border);
+  background: var(--ps-surface);
+}
+
+/* Summary */
 .summaryBox {
   padding: v.$space-6;
 }
@@ -141,43 +161,6 @@
   font-size: v.$text-2xl;
   font-weight: 900;
   color: var(--ps-danger);
-}
-
-/* Filters */
-.filters {
-  padding: v.$space-6;
-}
-
-.filtersGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: v.$space-4;
-
-  @include r.up(md) {
-    grid-template-columns: repeat(3, 1fr);
-    align-items: end;
-  }
-}
-
-.resetSlot {
-  display: flex;
-  justify-content: flex-end;
-
-  @include r.down(md) {
-    justify-content: flex-start;
-  }
-}
-
-.resetBtn {
-  white-space: nowrap;
-}
-
-.input {
-  width: 100%;
-  padding: 1.2rem 1.2rem;
-  border-radius: v.$radius-md;
-  border: 0.1rem solid var(--ps-border);
-  background: var(--ps-surface);
 }
 
 /* Table */

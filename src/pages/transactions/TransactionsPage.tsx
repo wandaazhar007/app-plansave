@@ -92,7 +92,7 @@ export default function TransactionsPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ cursor should come from res.meta.nextCursor
+  // cursor from res.meta.nextCursor
   const [nextCursor, setNextCursor] = useState<string | null>(null);
 
   // search skeleton
@@ -110,7 +110,7 @@ export default function TransactionsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
 
-  // List limit (kamu set 3)
+  // List limit
   const [pageLimit] = useState(3);
   const hasDateFilter = !!filters.from || !!filters.to;
 
@@ -164,8 +164,6 @@ export default function TransactionsPage() {
       });
 
       setItems(res.data || []);
-
-      // ✅ FIX: cursor from meta.nextCursor
       setNextCursor(res?.meta?.nextCursor ?? null);
     } catch (e: any) {
       setError(e?.message || "Failed to load transactions.");
@@ -175,7 +173,6 @@ export default function TransactionsPage() {
   }
 
   async function loadMore() {
-    // ✅ if nextCursor is null, no more pages
     if (!nextCursor) return;
 
     setLoadingMore(true);
@@ -192,8 +189,6 @@ export default function TransactionsPage() {
       });
 
       setItems((prev) => [...prev, ...(res.data || [])]);
-
-      // ✅ FIX: cursor from meta.nextCursor
       setNextCursor(res?.meta?.nextCursor ?? null);
     } catch (e: any) {
       push({ type: "error", title: "Failed", message: e?.message || "Failed to load more." });
@@ -202,7 +197,6 @@ export default function TransactionsPage() {
     }
   }
 
-  // Summary fetch (accurate by paging all data in range)
   async function fetchSummary() {
     setSummaryLoading(true);
     setSummaryError(null);
@@ -247,7 +241,6 @@ export default function TransactionsPage() {
           else expenseCents += Math.abs(tx.amountCents);
         }
 
-        // ✅ FIX: cursor from meta.nextCursor
         const nc: string | null = res?.meta?.nextCursor ?? null;
         if (!nc) break;
         cursor = nc;
@@ -266,14 +259,9 @@ export default function TransactionsPage() {
     }
   }
 
-  // refetch list on From/To
+  // refetch list + summary on From/To
   useEffect(() => {
     fetchFirst();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.from, filters.to]);
-
-  // refetch summary on From/To
-  useEffect(() => {
     fetchSummary();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.from, filters.to]);
@@ -343,23 +331,15 @@ export default function TransactionsPage() {
 
   return (
     <div className={styles.wrap}>
-      <div className={styles.topbar}>
-        <div className={styles.heading}>
-          <h1 className={styles.title}>Transactions</h1>
-          <p className={styles.subtitle}>
-            Keep it simple. Add what happened—PlanSave will help you stay on track.
-          </p>
-        </div>
-
-        <div className={styles.topActions} aria-label="Top actions">
-          <button type="button" className="btn" onClick={fetchFirst} disabled={loading}>
+      {/* ✅ top row: buttons + search inline */}
+      <div className={styles.toolbar} aria-label="Transactions toolbar">
+        <div className={styles.actions}>
+          <button type="button" className="btn" onClick={fetchFirst} disabled={loading} aria-label="Refresh">
             <FontAwesomeIcon icon={faRotateRight} />
-            Refresh
           </button>
 
-          <button type="button" className="btn btn-primary" onClick={goCreate}>
+          <button type="button" className="btn btn-primary" onClick={goCreate} aria-label="Add">
             <FontAwesomeIcon icon={faPlus} />
-            Add
           </button>
 
           <button
@@ -368,23 +348,59 @@ export default function TransactionsPage() {
             onClick={() => setFiltersOpen((v) => !v)}
             aria-expanded={filtersOpen}
             aria-controls="tx-filters"
+            aria-label="Filter"
           >
             <FontAwesomeIcon icon={faFilter} />
-            Filter
             <FontAwesomeIcon icon={faChevronDown} className={filtersOpen ? styles.chevUp : ""} />
           </button>
         </div>
+
+        <div className={styles.searchInline}>
+          <input
+            className={styles.search}
+            value={filters.q}
+            onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
+            placeholder="Live search…"
+            aria-label="Live search"
+          />
+        </div>
       </div>
 
-      {/* Search row */}
-      <div className={styles.searchRow}>
-        <input
-          className={styles.search}
-          value={filters.q}
-          onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
-          placeholder="Live search…"
-        />
-      </div>
+      {/* ✅ filters panel under toolbar */}
+      {filtersOpen ? (
+        <section id="tx-filters" className={`card ${styles.filters}`} aria-label="Filters">
+          <div className={styles.filtersGrid}>
+            <div className="field">
+              <label className="label">From</label>
+              <input
+                type="date"
+                className={styles.input}
+                value={filters.from}
+                onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
+              />
+            </div>
+
+            <div className="field">
+              <label className="label">To</label>
+              <input
+                type="date"
+                className={styles.input}
+                value={filters.to}
+                onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
+              />
+            </div>
+
+            <div className={styles.resetSlot}>
+              {hasDateFilter ? (
+                <button type="button" className={`btn ${styles.resetBtn}`} onClick={onResetDates}>
+                  <FontAwesomeIcon icon={faArrowRotateLeft} />
+                  Reset
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {/* Summary always visible */}
       <section className={`card ${styles.summaryBox}`} aria-label="Summary totals">
@@ -425,42 +441,6 @@ export default function TransactionsPage() {
           </div>
         )}
       </section>
-
-      {/* Filters panel */}
-      {filtersOpen ? (
-        <section id="tx-filters" className={`card ${styles.filters}`} aria-label="Filters">
-          <div className={styles.filtersGrid}>
-            <div className="field">
-              <label className="label">From</label>
-              <input
-                type="date"
-                className={styles.input}
-                value={filters.from}
-                onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
-              />
-            </div>
-
-            <div className="field">
-              <label className="label">To</label>
-              <input
-                type="date"
-                className={styles.input}
-                value={filters.to}
-                onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
-              />
-            </div>
-
-            <div className={styles.resetSlot}>
-              {hasDateFilter ? (
-                <button type="button" className={`btn ${styles.resetBtn}`} onClick={onResetDates}>
-                  <FontAwesomeIcon icon={faArrowRotateLeft} />
-                  Reset
-                </button>
-              ) : null}
-            </div>
-          </div>
-        </section>
-      ) : null}
 
       {/* Table */}
       <section className={`card ${styles.tableCard}`} aria-label="Transactions table">
@@ -528,12 +508,13 @@ export default function TransactionsPage() {
                       </td>
 
                       <td className={styles.actionsCol}>
-                        <button className={`btn ${styles.rowBtn}`} onClick={() => goEdit(tx)}>
+                        <button className={`btn ${styles.rowBtn}`} onClick={() => goEdit(tx)} aria-label="Edit">
                           <FontAwesomeIcon icon={faPenToSquare} />
                         </button>
                         <button
                           className={`btn ${styles.rowBtn} ${styles.deleteBtn}`}
                           onClick={() => askDelete(tx.id)}
+                          aria-label="Delete"
                         >
                           <FontAwesomeIcon icon={faTrash} />
                         </button>
@@ -546,15 +527,10 @@ export default function TransactionsPage() {
           </div>
         )}
 
-        {/* Load more should now work because nextCursor is from meta */}
+        {/* Load more */}
         {!loading && !error && items.length > 0 ? (
           <div className={styles.pagination}>
-            <button
-              type="button"
-              className="btn"
-              onClick={loadMore}
-              disabled={!nextCursor || loadingMore}
-            >
+            <button type="button" className="btn" onClick={loadMore} disabled={!nextCursor || loadingMore}>
               {loadingMore ? "Loading..." : nextCursor ? "Load more" : "No more"}
             </button>
           </div>
