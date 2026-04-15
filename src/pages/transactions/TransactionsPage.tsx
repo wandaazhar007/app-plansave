@@ -1,5 +1,5 @@
 // src/pages/transactions/TransactionsPage.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -10,8 +10,11 @@ import {
   faRotateRight,
   faChevronDown,
   faArrowRotateLeft,
+  faChartPie,
+  faXmark, // ✅ clear search button
 } from "@fortawesome/free-solid-svg-icons";
 
+import useMediaQuery from "../../lib/hooks/useMediaQuery";
 import { useAuth } from "../../lib/auth/useAuth";
 import { useToast } from "../../components/toast/ToastProvider";
 
@@ -76,7 +79,40 @@ function formatMoney(amountCents: number, currency: "USD" | "IDR") {
   }
 }
 
+/** UI date format: MM-DD-YYYY */
+function formatDateMMDDYYYY(ymd?: string | null) {
+  if (!ymd) return "-";
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+  if (!m) return ymd;
+  const [, yyyy, mm, dd] = m;
+  return `${mm}-${dd}-${yyyy}`;
+}
+
+function matchesQuery(tx: Transaction, rawQ: string) {
+  const q = rawQ.trim().toLowerCase();
+  if (!q) return true;
+
+  const hay = `${tx.category ?? ""} ${tx.note ?? ""} ${tx.type ?? ""}`.toLowerCase();
+  return hay.includes(q);
+}
+
+/** ✅ Merge without duplicates by id (preserve order: prev first, then new). */
+function mergeUniqueById(prev: Transaction[], batch: Transaction[]) {
+  const seen = new Set(prev.map((t) => t.id));
+  const out = [...prev];
+  for (const t of batch) {
+    if (!seen.has(t.id)) {
+      out.push(t);
+      seen.add(t.id);
+    }
+  }
+  return out;
+}
+
 export default function TransactionsPage() {
+  // ASSUMPTION: desktop breakpoint = md (>= 76.8rem)
+  const isDesktop = useMediaQuery("(min-width: 76.8rem)");
+
   const { getAccessToken } = useAuth();
   const { push } = useToast();
 
@@ -85,6 +121,9 @@ export default function TransactionsPage() {
 
   // UI (default: CLOSED)
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // summary: desktop always visible; mobile toggle
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
   // Data (list)
   const [items, setItems] = useState<Transaction[]>([]);
@@ -110,7 +149,7 @@ export default function TransactionsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
 
-  // List limit
+  // List limit (default 3)
   const [pageLimit] = useState(3);
   const hasDateFilter = !!filters.from || !!filters.to;
 
@@ -123,6 +162,9 @@ export default function TransactionsPage() {
   });
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+
+  // ✅ Abort & token for prefetch loops (avoid duplicates)
+  const prefetchRunIdRef = useRef(0);
 
   // live search debounce + skeleton
   useEffect(() => {
@@ -138,13 +180,9 @@ export default function TransactionsPage() {
 
   // client-side live search
   const visibleItems = useMemo(() => {
-    const q = debouncedQ.trim().toLowerCase();
+    const q = debouncedQ.trim();
     if (!q) return items;
-
-    return items.filter((tx) => {
-      const hay = `${tx.category ?? ""} ${tx.note ?? ""} ${tx.type ?? ""}`.toLowerCase();
-      return hay.includes(q);
-    });
+    return items.filter((tx) => matchesQuery(tx, q));
   }, [items, debouncedQ]);
 
   async function fetchFirst() {
@@ -188,12 +226,76 @@ export default function TransactionsPage() {
         to: filters.to || undefined,
       });
 
-      setItems((prev) => [...prev, ...(res.data || [])]);
+      const batch: Transaction[] = res.data || [];
+      setItems((prev) => mergeUniqueById(prev, batch)); // ✅ dedupe
       setNextCursor(res?.meta?.nextCursor ?? null);
     } catch (e: any) {
       push({ type: "error", title: "Failed", message: e?.message || "Failed to load more." });
     } finally {
       setLoadingMore(false);
+    }
+  }
+
+  /**
+   * ✅ Auto-prefetch for live search (no backend change):
+   * - Fetch additional pages until a match appears OR data ends OR safety cap.
+   * - Dedupe by id to prevent duplicates.
+   */
+  async function prefetchUntilMatch(q: string) {
+    const query = q.trim();
+    if (!query) return;
+
+    // already found in loaded items
+    if (items.some((tx) => matchesQuery(tx, query))) return;
+
+    if (!nextCursor) return;
+
+    const token = await getAccessToken();
+    if (!token) return;
+
+    // new run id (abort previous)
+    prefetchRunIdRef.current += 1;
+    const runId = prefetchRunIdRef.current;
+
+    setSearching(true);
+
+    try {
+      let cursor: string | null = nextCursor;
+      let guard = 0;
+      const MAX_PAGES = 8;
+
+      while (cursor && guard < MAX_PAGES) {
+        // aborted by newer run
+        if (prefetchRunIdRef.current !== runId) return;
+
+        guard += 1;
+
+        const res: any = await listTransactions({
+          token,
+          limit: pageLimit,
+          cursor,
+          from: filters.from || undefined,
+          to: filters.to || undefined,
+        });
+
+        const batch: Transaction[] = res.data || [];
+        const nc: string | null = res?.meta?.nextCursor ?? null;
+
+        // append with dedupe
+        setItems((prev) => mergeUniqueById(prev, batch));
+        setNextCursor(nc);
+
+        // if found in batch, stop
+        if (batch.some((tx) => matchesQuery(tx, query))) break;
+
+        cursor = nc;
+        if (!cursor) break;
+      }
+    } finally {
+      // only clear searching if this run still active
+      if (prefetchRunIdRef.current === runId) {
+        window.setTimeout(() => setSearching(false), 250);
+      }
     }
   }
 
@@ -266,6 +368,20 @@ export default function TransactionsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.from, filters.to]);
 
+  // desktop: summary always visible; mobile: default closed
+  useEffect(() => {
+    if (isDesktop) setSummaryOpen(true);
+    else setSummaryOpen(false);
+  }, [isDesktop]);
+
+  // when debouncedQ changes, auto-prefetch if needed
+  useEffect(() => {
+    const q = debouncedQ.trim();
+    if (!q) return;
+    prefetchUntilMatch(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQ]);
+
   // toast + refresh after redirect from form page
   useEffect(() => {
     const st = location.state as { refresh?: boolean; toast?: RedirectToast } | null;
@@ -329,16 +445,64 @@ export default function TransactionsPage() {
     setFilters((f) => ({ ...f, from: "", to: "" }));
   }
 
+  /** ✅ Clear search:
+   * - abort any prefetch loop
+   * - clear keyword
+   * - reload first page (limit=3)
+   */
+  function clearSearch() {
+    prefetchRunIdRef.current += 1; // abort running prefetch
+    setFilters((f) => ({ ...f, q: "" }));
+    setDebouncedQ("");
+    setSearching(false);
+
+    // list back to first page (3)
+    fetchFirst();
+  }
+
+  const showClear = filters.q.trim().length > 0;
+
   return (
     <div className={styles.wrap}>
-      {/* ✅ top row: buttons + search inline */}
+      {/* toolbar */}
       <div className={styles.toolbar} aria-label="Transactions toolbar">
+        <div className={styles.searchInline}>
+          <div className={styles.searchWrap}>
+            <input
+              className={styles.search}
+              value={filters.q}
+              onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
+              placeholder="Live search…"
+              aria-label="Live search"
+            />
+
+            {showClear ? (
+              <button
+                type="button"
+                className={styles.clearBtn}
+                onClick={clearSearch}
+                aria-label="Clear search"
+                title="Clear"
+              >
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
+            ) : null}
+          </div>
+        </div>
+
         <div className={styles.actions}>
-          <button type="button" className="btn" onClick={fetchFirst} disabled={loading} aria-label="Refresh">
+          <button
+            type="button"
+            className="btn"
+            onClick={fetchFirst}
+            disabled={loading}
+            aria-label="Refresh"
+            title="Refresh"
+          >
             <FontAwesomeIcon icon={faRotateRight} />
           </button>
 
-          <button type="button" className="btn btn-primary" onClick={goCreate} aria-label="Add">
+          <button type="button" className="btn btn-primary" onClick={goCreate} aria-label="Add" title="Add">
             <FontAwesomeIcon icon={faPlus} />
           </button>
 
@@ -349,24 +513,30 @@ export default function TransactionsPage() {
             aria-expanded={filtersOpen}
             aria-controls="tx-filters"
             aria-label="Filter"
+            title="Filter"
           >
             <FontAwesomeIcon icon={faFilter} />
             <FontAwesomeIcon icon={faChevronDown} className={filtersOpen ? styles.chevUp : ""} />
           </button>
-        </div>
 
-        <div className={styles.searchInline}>
-          <input
-            className={styles.search}
-            value={filters.q}
-            onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
-            placeholder="Live search…"
-            aria-label="Live search"
-          />
+          {!isDesktop ? (
+            <button
+              type="button"
+              className={`btn ${styles.summaryBtn}`}
+              onClick={() => setSummaryOpen((v) => !v)}
+              aria-expanded={summaryOpen}
+              aria-controls="tx-summary"
+              aria-label="Summary"
+              title="Summary"
+            >
+              <FontAwesomeIcon icon={faChartPie} />
+              <FontAwesomeIcon icon={faChevronDown} className={summaryOpen ? styles.chevUp : ""} />
+            </button>
+          ) : null}
         </div>
       </div>
 
-      {/* ✅ filters panel under toolbar */}
+      {/* filters panel */}
       {filtersOpen ? (
         <section id="tx-filters" className={`card ${styles.filters}`} aria-label="Filters">
           <div className={styles.filtersGrid}>
@@ -402,45 +572,47 @@ export default function TransactionsPage() {
         </section>
       ) : null}
 
-      {/* Summary always visible */}
-      <section className={`card ${styles.summaryBox}`} aria-label="Summary totals">
-        <div className={styles.summaryTop}>
-          <div className={styles.summaryTitle}>Summary</div>
-          <div className={styles.summaryRange}>{summary.rangeLabel}</div>
-        </div>
-
-        {summaryError ? (
-          <div className={styles.summaryError}>{summaryError}</div>
-        ) : (
-          <div className={styles.summaryGrid}>
-            <div className={`card ${styles.summaryCard}`}>
-              <div className={styles.summaryLabel}>Expenses</div>
-              <div className={styles.summaryValueExpense}>
-                {summaryLoading ? "Loading…" : `-${formatMoney(summary.expenseCents, "USD")}`}
-              </div>
-            </div>
-
-            <div className={`card ${styles.summaryCard}`}>
-              <div className={styles.summaryLabel}>Income</div>
-              <div className={styles.summaryValueIncome}>
-                {summaryLoading ? "Loading…" : `+${formatMoney(summary.incomeCents, "USD")}`}
-              </div>
-            </div>
-
-            <div className={`card ${styles.summaryCard}`}>
-              <div className={styles.summaryLabel}>Balance</div>
-              <div className={summary.balanceCents >= 0 ? styles.summaryValueIncome : styles.summaryValueExpense}>
-                {summaryLoading
-                  ? "Loading…"
-                  : `${summary.balanceCents >= 0 ? "+" : "-"}${formatMoney(
-                    Math.abs(summary.balanceCents),
-                    "USD"
-                  )}`}
-              </div>
-            </div>
+      {/* Summary */}
+      {summaryOpen ? (
+        <section id="tx-summary" className={`card ${styles.summaryBox}`} aria-label="Summary totals">
+          <div className={styles.summaryTop}>
+            <div className={styles.summaryTitle}>Summary</div>
+            <div className={styles.summaryRange}>{summary.rangeLabel}</div>
           </div>
-        )}
-      </section>
+
+          {summaryError ? (
+            <div className={styles.summaryError}>{summaryError}</div>
+          ) : (
+            <div className={styles.summaryGrid}>
+              <div className={`card ${styles.summaryCard}`}>
+                <div className={styles.summaryLabel}>Expenses</div>
+                <div className={styles.summaryValueExpense}>
+                  {summaryLoading ? "Loading…" : `-${formatMoney(summary.expenseCents, "USD")}`}
+                </div>
+              </div>
+
+              <div className={`card ${styles.summaryCard}`}>
+                <div className={styles.summaryLabel}>Income</div>
+                <div className={styles.summaryValueIncome}>
+                  {summaryLoading ? "Loading…" : `+${formatMoney(summary.incomeCents, "USD")}`}
+                </div>
+              </div>
+
+              <div className={`card ${styles.summaryCard}`}>
+                <div className={styles.summaryLabel}>Balance</div>
+                <div className={summary.balanceCents >= 0 ? styles.summaryValueIncome : styles.summaryValueExpense}>
+                  {summaryLoading
+                    ? "Loading…"
+                    : `${summary.balanceCents >= 0 ? "+" : "-"}${formatMoney(
+                      Math.abs(summary.balanceCents),
+                      "USD"
+                    )}`}
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+      ) : null}
 
       {/* Table */}
       <section className={`card ${styles.tableCard}`} aria-label="Transactions table">
@@ -495,12 +667,10 @@ export default function TransactionsPage() {
 
                   return (
                     <tr key={tx.id}>
-                      <td>{tx.date}</td>
+                      <td>{formatDateMMDDYYYY(tx.date)}</td>
 
                       <td className={isIncome ? styles.typeIncome : styles.typeExpense}>{tx.type}</td>
-
                       <td>{tx.category}</td>
-
                       <td className={styles.note}>{tx.note || "-"}</td>
 
                       <td className={`${styles.right} ${isIncome ? styles.amountIncome : styles.amountExpense}`}>
