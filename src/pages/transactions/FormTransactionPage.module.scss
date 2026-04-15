@@ -7,22 +7,3 @@
   flex-direction: column;
   gap: v.$space-6;
 }
-
-.header {
-  display: flex;
-  flex-direction: column;
-  gap: v.$space-2;
-}
-
-.pageTitle {
-  font-size: v.$text-3xl;
-  line-height: v.$line-tight;
-  font-weight: 900;
-  margin: 0;
-}
-
-.pageSub {
-  color: var(--ps-muted);
-  line-height: v.$line-relaxed;
-  margin: 0;
-}
