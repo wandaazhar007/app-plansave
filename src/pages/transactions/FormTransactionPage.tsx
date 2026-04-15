@@ -1,5 +1,5 @@
 // src/pages/transactions/FormTransactionPage.tsx
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../lib/auth/useAuth";
@@ -32,10 +32,6 @@ export default function FormTransactionPage() {
   const initial = "initial" in state ? state.initial : null;
 
   const [busy, setBusy] = useState(false);
-
-  const title = useMemo(() => {
-    return mode === "create" ? "Add transaction" : "Edit transaction";
-  }, [mode]);
 
   function goBack(opts?: { refresh?: boolean; toast?: RedirectToast }) {
     navigate("/app/transactions", {
