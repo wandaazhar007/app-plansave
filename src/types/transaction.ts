@@ -1,30 +1,64 @@
+// src/types/transaction.ts
+export type Currency = "USD" | "IDR";
 export type TransactionType = "income" | "expense";
 
+/**
+ * Sesuai backend response (contoh Postman):
+ * {
+ *   id, userId, type, amountCents, currency, category,
+ *   isDialysisRelated, date (YYYY-MM-DD),
+ *   note, createdAt, updatedAt
+ * }
+ */
 export type Transaction = {
-  // amountCents(amountCents: any): number;
-  amountCents: number;
-  isDialysisRelated: any;
   id: string;
+  userId?: string;
+
   type: TransactionType;
-  amount: number;
-  currency?: "USD" | "IDR";
-  date: string; // ISO
+
+  amountCents: number;
+  currency: Currency;
+
   category: string;
+
+  // backend: boolean
+  isDialysisRelated: boolean;
+
+  // backend: "YYYY-MM-DD"
+  date: string;
+
   note?: string | null;
-  isDialysis?: boolean;
+
   createdAt?: string;
   updatedAt?: string;
 };
 
-export type ListTransactionsResponse = {
-  success: boolean;
-  data: Transaction[];
+export type ListTransactionsMeta = {
   nextCursor?: string | null;
+  limit: number;
 };
 
-export type ApiFail = {
+export type ListTransactionsResponse = {
+  success: true;
+  data: Transaction[];
+  meta: ListTransactionsMeta;
+};
+
+export type SingleTransactionResponse = {
+  success: true;
+  data: Transaction;
+};
+
+export type DeleteTransactionResponse = {
+  success: true;
+};
+
+/** Error format umum dari backend */
+export type ApiErrorShape = {
   success: false;
-  code?: string;
-  message?: string;
-  details?: any;
+  error: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
 };

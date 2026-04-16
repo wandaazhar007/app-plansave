@@ -23,6 +23,15 @@ function toInputDate(date?: string) {
   return date.slice(0, 10);
 }
 
+function todayInputDate() {
+  // local date → YYYY-MM-DD for <input type="date" />
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function amountToCents(amountStr: string) {
   const n = Number(amountStr);
   if (!Number.isFinite(n) || n <= 0) return null;
@@ -49,11 +58,16 @@ export default function FormTransaction({
     (initial?.currency as any) || "USD"
   );
 
-  const [date, setDate] = useState<string>(toInputDate(initial?.date)); // YYYY-MM-DD
+  // ✅ default date:
+  // - edit: pakai initial.date
+  // - create: pakai hari ini (local)
+  const [date, setDate] = useState<string>(() => {
+    const fromInitial = toInputDate(initial?.date);
+    if (fromInitial) return fromInitial;
+    return mode === "create" ? todayInputDate() : "";
+  });
+
   const [category, setCategory] = useState<string>(initial?.category || "");
-  const [isDialysisRelated, setIsDialysisRelated] = useState<boolean>(
-    !!initial?.isDialysisRelated
-  );
   const [note, setNote] = useState<string>(initial?.note || "");
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -80,6 +94,8 @@ export default function FormTransaction({
   function showError(key: string) {
     return !!touched[key] && !!errors[key];
   }
+
+  const amountPlaceholder = currency === "IDR" ? "e.g. 25.000" : "e.g. 25.50";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -110,7 +126,6 @@ export default function FormTransaction({
       currency,
       date, // ✅ YYYY-MM-DD
       category: category.trim(),
-      isDialysisRelated,
       note: note.trim() ? note.trim() : undefined,
     });
   }
@@ -168,7 +183,7 @@ export default function FormTransaction({
               className={`${styles.input} ${showError("amount") ? styles.inputError : ""}`}
               value={amount}
               inputMode="decimal"
-              placeholder="e.g. 25.50"
+              placeholder={amountPlaceholder}
               onChange={(e) => setAmount(e.target.value)}
               onBlur={() => setTouched((t) => ({ ...t, amount: true }))}
               disabled={busy}
@@ -195,7 +210,7 @@ export default function FormTransaction({
               list="category-suggestions"
               className={`${styles.input} ${showError("category") ? styles.inputError : ""}`}
               value={category}
-              placeholder="e.g. Food, Rent, Dialysis, Salary"
+              placeholder="e.g. Food, Rent, Salary"
               onChange={(e) => setCategory(e.target.value)}
               onBlur={() => setTouched((t) => ({ ...t, category: true }))}
               disabled={busy}
@@ -207,18 +222,6 @@ export default function FormTransaction({
               ))}
             </datalist>
             {showError("category") ? <div className={styles.error}>{errors.category}</div> : null}
-          </div>
-
-          <div className={`field ${styles.full}`}>
-            <label className={styles.checkRow}>
-              <input
-                type="checkbox"
-                checked={isDialysisRelated}
-                onChange={(e) => setIsDialysisRelated(e.target.checked)}
-                disabled={busy}
-              />
-              <span>Dialysis related</span>
-            </label>
           </div>
 
           <div className={`field ${styles.full}`}>

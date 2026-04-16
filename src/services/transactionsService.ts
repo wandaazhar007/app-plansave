@@ -1,5 +1,10 @@
-// // src/services/transactionsService.ts
-import type { ListTransactionsResponse, Transaction } from "../types/transaction";
+// src/services/transactionsService.ts
+import type {
+  DeleteTransactionResponse,
+  ListTransactionsResponse,
+  SingleTransactionResponse,
+  Transaction,
+} from "../types/transaction";
 import { ensureDelay } from "../lib/utils/ensureDelay";
 
 const BASE = import.meta.env.VITE_API_BASE_URL || "/api/v1";
@@ -7,20 +12,16 @@ const BASE = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 // skeleton sengaja agak lama biar smooth
 const MIN_SKELETON_MS = 650;
 
-function buildUrl(path: string, params?: Record<string, string | undefined>) {
-  const url = new URL(`${BASE}${path}`, window.location.origin);
-  if (params) {
-    Object.entries(params).forEach(([k, v]) => {
-      if (v !== undefined && v !== "") url.searchParams.set(k, v);
-    });
+function buildUrl(path: string) {
+  // BASE bisa absolute atau relative (mis. /api/v1)
+  // kalau relative, pakai origin agar jadi URL valid
+  if (/^https?:\/\//i.test(BASE)) {
+    return `${BASE.replace(/\/+$/, "")}${path}`;
   }
-  return url.toString();
+  return new URL(`${BASE}${path}`, window.location.origin).toString();
 }
 
-async function request<T>(
-  path: string,
-  options: RequestInit & { token: string }
-): Promise<T> {
+async function request<T>(path: string, options: RequestInit & { token: string }): Promise<T> {
   const { token, ...rest } = options;
 
   const res = await fetch(buildUrl(path), {
@@ -35,8 +36,8 @@ async function request<T>(
   const json = await res.json().catch(() => null);
 
   if (!res.ok) {
-    const message =
-      json?.message || `Request failed (${res.status})`;
+    // backend biasanya: { success:false, error:{message} } atau { message }
+    const message = json?.error?.message || json?.message || `Request failed (${res.status})`;
     throw new Error(message);
   }
 
@@ -45,27 +46,27 @@ async function request<T>(
 
 export async function listTransactions(args: {
   token: string;
-  limit: number;
+  limit: number; // backend max 100
   cursor?: string;
-  from?: string;
-  to?: string;
+  from?: string; // YYYY-MM-DD
+  to?: string; // YYYY-MM-DD
+  // masih kita simpan agar kompatibel kalau nanti dipakai lagi
   type?: string;
   category?: string;
   dialysis?: string;
 }): Promise<ListTransactionsResponse> {
   const start = Date.now();
 
-  const params: Record<string, string | undefined> = {
-    limit: String(args.limit),
-    cursor: args.cursor,
-    from: args.from,
-    to: args.to,
-    type: args.type,
-    category: args.category,
-    dialysis: args.dialysis,
-  };
+  const params = new URLSearchParams();
+  params.set("limit", String(args.limit));
+  if (args.cursor) params.set("cursor", args.cursor);
+  if (args.from) params.set("from", args.from);
+  if (args.to) params.set("to", args.to);
+  if (args.type) params.set("type", args.type);
+  if (args.category) params.set("category", args.category);
+  if (args.dialysis) params.set("dialysis", args.dialysis);
 
-  const p = request<ListTransactionsResponse>(`/transactions?${new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== "") as any).toString()}`, {
+  const p = request<ListTransactionsResponse>(`/transactions?${params.toString()}`, {
     method: "GET",
     token: args.token,
   });
@@ -75,11 +76,8 @@ export async function listTransactions(args: {
   return result;
 }
 
-export async function createTransaction(args: {
-  token: string;
-  payload: Partial<Transaction>;
-}) {
-  return request<{ success: boolean; data: Transaction }>(`/transactions`, {
+export async function createTransaction(args: { token: string; payload: Partial<Transaction> }) {
+  return request<SingleTransactionResponse>(`/transactions`, {
     method: "POST",
     token: args.token,
     body: JSON.stringify(args.payload),
@@ -91,18 +89,15 @@ export async function updateTransaction(args: {
   id: string;
   payload: Partial<Transaction>;
 }) {
-  return request<{ success: boolean; data: Transaction }>(
-    `/transactions/${args.id}`,
-    {
-      method: "PUT",
-      token: args.token,
-      body: JSON.stringify(args.payload),
-    }
-  );
+  return request<SingleTransactionResponse>(`/transactions/${args.id}`, {
+    method: "PUT",
+    token: args.token,
+    body: JSON.stringify(args.payload),
+  });
 }
 
 export async function deleteTransaction(args: { token: string; id: string }) {
-  return request<{ success: boolean }>(`/transactions/${args.id}`, {
+  return request<DeleteTransactionResponse>(`/transactions/${args.id}`, {
     method: "DELETE",
     token: args.token,
   });
